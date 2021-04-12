@@ -1,0 +1,37 @@
+<configuration scan="true" scanPeriod="10 seconds">
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are assigned the type
+             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+<!--            <pattern>%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>-->
+            <pattern>%yellow(%d{ISO8601}) %highlight(%-5level) [%t] %blue(%C{1.}): %msg%n%throwable</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.vg2902" level="debug" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+<!--    <logger name="org.springframework" level="debug" additivity="false">-->
+<!--        <appender-ref ref="STDOUT"/>-->
+<!--    </logger>-->
+<!--    <logger name="org.springframework.jdbc.core" level="debug" additivity="false">-->
+<!--        <appender-ref ref="STDOUT"/>-->
+<!--    </logger>-->
+<!--    <logger name="org.springframework.transaction" level="info" additivity="false">-->
+<!--        <appender-ref ref="STDOUT"/>-->
+<!--    </logger>-->
+<!--    <logger name="org.springframework.orm.hibernate5.HibernateTransactionManager" level="trace" additivity="false">-->
+<!--        <appender-ref ref="STDOUT"/>-->
+<!--    </logger>-->
+<!--    <logger name="org.hibernate.SQL" level="debug" additivity="false">-->
+<!--        <appender-ref ref="STDOUT"/>-->
+<!--    </logger>-->
+<!--    <logger name="org.springframework.jdbc.datasource.init.ScriptUtils" level="debug" additivity="false">-->
+<!--        <appender-ref ref="STDOUT"/>-->
+<!--    </logger>-->
+
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
