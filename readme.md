@@ -140,7 +140,7 @@ SynchroTask<String> returningTask = SynchroTask
         .from(() -> "foo")
         .withName("bar")
         .withId(42)
-        .onLock(CollisionStrategy.THROW);
+        .onLock(CollisionStrategy.RETURN);
         .build();
 ```
 
@@ -166,16 +166,16 @@ CREATE TABLE synchro_task(
 ```
 The table must have:
 * all three columns with exactly the same names and data types as they are defined above
-* a composite primary key based on **taskName** and **taskId** 
+* a composite primary key based on **task_name** and **task_id** 
 
-Column size, however, is not limited and can vary. Just make sure that **taskName** and **taskId** columns 
+Column size, however, is not limited and can vary. Just make sure that **task_name** and **task_id** columns 
 are wide enough to fit anticipated values. By default, the service expects the table to be named **SYNCHRO_TASK**, 
 but it can be overridden during initialization.
 
 `SynchroTaskJdbcService` requires `javax.sql.DataSource` for initialization. 
 Every invocation of `run(SynchroTask)` method first will obtain a new `Connection` from this `DataSource`. 
-This connection is then used to create and immediately lock the **control row** with the given **taskName** 
-and **taskId** in the **registry table**. 
+This connection is then used to create and immediately lock the **control row** with the given **task_name** 
+and **task_id** in the **registry table**. 
 
 If the row already exists and is unlocked, the service will try to reuse it. 
 If the row already exists and is locked by another database session, the given `SynchroTask` will be assumed 
