@@ -9,15 +9,48 @@
     <packaging>pom</packaging>
     <version>1.0.0-SNAPSHOT</version>
 
+    <name>synchro-task</name>
+    <description>SynchroTask is a lightweight library which helps to synchronize Java routines in distributed environments</description>
+    <url>https://github.com/vg2902/synchro-task</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Vadim Galavanov</name>
+            <email>vadim@vg2902.org</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/vg2902/synchro-task.git</connection>
+        <developerConnection>scm:git:ssh://github.com/vg2902/synchro-task.git</developerConnection>
+        <url>http://github.com/vg2902/synchro-task/tree/master</url>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
     <modules>
         <module>synchro-task-core</module>
         <module>synchro-task-jdbc</module>
         <module>synchro-task-spring</module>
         <module>synchro-task-test</module>
     </modules>
-
-    <name>synchro-task</name>
-    <url>https://github.com/vg2902/synchro-task</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
