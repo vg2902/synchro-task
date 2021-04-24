@@ -7,7 +7,7 @@
     <groupId>org.vg2902</groupId>
     <artifactId>synchro-task-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 
     <modules>
         <module>synchro-task-core</module>
