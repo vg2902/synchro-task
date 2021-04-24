@@ -24,7 +24,7 @@ import org.vg2902.synchrotask.core.exception.SynchroTaskException;
 public interface SynchroTaskService {
 
     /**
-     * Executes given <b>task</b> with respect to its {@link SynchroTask#getCollisionStrategy()}.
+     * Executes the given <b>task</b> with respect to its {@link CollisionStrategy}.
      *
      * @param task {@link SynchroTask} instance
      * @param <T> <b>task</b> return type
@@ -32,6 +32,8 @@ public interface SynchroTaskService {
      * and another {@link SynchroTask} instance with the same <b>taskName</b> and <b>taskId</b> is still running
      * @throws SynchroTaskException in case of any unhandled exception occurred during {@link SynchroTask} execution.
      * @return <b>task</b> return value
+     * @see SynchroTask
+     * @see CollisionStrategy
      */
     <T> T run(SynchroTask<T> task);
 }

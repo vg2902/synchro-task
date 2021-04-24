@@ -33,8 +33,6 @@ import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
  * <p>
  * The annotated method must have two arguments with {@link TaskName} and {@link TaskId} annotations respectively to designate the
  * parameters that should be used as the <b>taskName</b> and <b>taskId</b>:
- * <p>
- * <p>
  * <pre>
  * &#64;Component
  * public class SynchroTaskRunner {
@@ -59,11 +57,15 @@ public @interface SynchroTask {
     /**
      * Optional name of the {@link SynchroTaskService} bean which should execute
      * {@link org.vg2902.synchrotask.core.api.SynchroTask} instances created from the annotated method
+     *
+     * @return the name of the {@link SynchroTaskService} bean
      */
     String serviceName() default "";
 
     /**
      * {@link CollisionStrategy} parameter of the tasks created from the annotated method
+     *
+     * @return {@link CollisionStrategy} value
      */
     CollisionStrategy onLock() default WAIT;
 }

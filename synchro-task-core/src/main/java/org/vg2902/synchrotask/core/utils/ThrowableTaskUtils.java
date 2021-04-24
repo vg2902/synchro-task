@@ -37,7 +37,7 @@ import static org.vg2902.synchrotask.core.utils.ThrowableTaskResult.result;
 public final class ThrowableTaskUtils {
 
     /**
-     * Converts given {@link ThrowableSupplier} to a {@link Supplier} which returns {@link ThrowableTaskResult}.
+     * Converts the given {@link ThrowableSupplier} to a {@link Supplier} which returns {@link ThrowableTaskResult}.
      *
      * @param supplier a {@link ThrowableSupplier}
      * @param <T> <b>supplier</b> return type
@@ -48,7 +48,7 @@ public final class ThrowableTaskUtils {
     }
 
     /**
-     * Executes given <b>supplier</b> and returns a {@link ThrowableTaskResult} constructed from the outcome.
+     * Executes the given <b>supplier</b> and returns a {@link ThrowableTaskResult} constructed from the outcome.
      *
      * @param supplier a {@link ThrowableSupplier}
      * @param <T> <b>supplier</b> return type

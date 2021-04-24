@@ -46,7 +46,7 @@ import static java.util.Objects.requireNonNull;
  *    // Throwing task with name <b>bar</b> and id <b>42</b> with no return value
  *
  *    SynchroTask&lt;Void&gt; synchroTask = SynchroTask
- *            .from(() -> System.out.println("foo"))
+ *            .from(() -&gt; System.out.println("foo"))
  *            .withName("bar")
  *            .withId(42)
  *            .onLock(CollisionStrategy.THROW)
@@ -56,7 +56,7 @@ import static java.util.Objects.requireNonNull;
  *    // Waiting task with name <b>bar</b> and id <b>42</b> with {@link String} return type
  *
  *    SynchroTask&lt;String&gt; synchroTask = SynchroTask
- *            .from(() -> "foo")
+ *            .from(() -&gt; "foo")
  *            .withName("bar")
  *            .withId(42)
  *            .onLock(CollisionStrategy.WAIT)

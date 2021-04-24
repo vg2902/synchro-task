@@ -78,7 +78,7 @@ import static java.util.Objects.requireNonNull;
  *     SynchroTaskService service = SynchroTaskJdbcService
  *          .from(getDataSource())
  *          .withTableName("CUSTOM_SYNCHRO_TASK")
- *          .withInterceptor((task, connection) -> this::intercept))
+ *          .withInterceptor((task, connection) -&gt; this::intercept))
  *          .build();
  * </pre>
  *
@@ -115,7 +115,7 @@ public class SynchroTaskJdbcService implements SynchroTaskService {
     }
 
     /**
-     * Executes given <b>task</b> with respect to its {@link SynchroTask#getCollisionStrategy()} using
+     * Executes the given <b>task</b> with respect to its {@link CollisionStrategy} using
      * the registry table to keep track of running tasks and ensure synchronization.
      * <br>
      * Prior to the <b>task</b> executing, it will try to create and immediately lock a "control" row
