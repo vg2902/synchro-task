@@ -25,11 +25,15 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <lombok.version>1.18.16</lombok.version>
+        <slf4j.version>1.7.30</slf4j.version>
+
         <junit.version>4.12</junit.version>
         <assertj.version>3.18.1</assertj.version>
         <assertj-db.version>2.0.2</assertj-db.version>
         <awaitility.version>3.0.0</awaitility.version>
         <mockito.version>3.6.28</mockito.version>
+
+        <logback.version>1.2.3</logback.version>
 
         <spring.latest.version>5.3.4</spring.latest.version>
         <testcontainers.version>1.15.3</testcontainers.version>
@@ -55,6 +59,11 @@
                 <version>${lombok.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
             <!-- Test libraries -->
 
             <dependency>
@@ -93,6 +102,15 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <pluginManagement>
