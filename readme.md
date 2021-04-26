@@ -18,6 +18,7 @@ and **SynchroTask** library is one of those agents.
 * [Providers](#providers)
   * [JDBC](#jdbc)
 * [Spring integration](#spring-integration)
+* [Logging](#logging)
 * [What's new](#whats-new)
   * [1.0.0](#100)
 
@@ -269,7 +270,7 @@ With SynchroTask Spring extension, you don't need to construct your tasks manual
 ```
 
 #### Usage
-Spring setup requires three steps:
+Spring setup requires two steps:
 * enable **SynchroTask** functionality at the application level using `@EnableSynchroTask` annotation
 * define at least one `SynchroTaskService` bean 
 ```java
@@ -344,6 +345,60 @@ public class SynchroTaskRunner {
 
 #### Requirements
 Spring versions from 3.0.0 and above are supported
+
+## Logging
+SynchroTask uses [SLF4J](http://www.slf4j.org/) logging facade.
+You can get the most detailed logs by setting `org.vg2902.synchrotask` log level to `DEBUG`.
+
+#### Logback example
+
+`logback.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{ISO8601} %-5level [%t] %C{1.}: %msg%n%throwable</pattern>
+    </encoder>
+  </appender>
+
+  <root level="info">
+    <appender-ref ref="STDOUT"/>
+  </root>
+
+  <!-- Setting SynchroTask log level to DEBUG -->
+  <logger name="org.vg2902.synchrotask" level="debug" additivity="false">
+    <appender-ref ref="STDOUT"/>
+  </logger>
+</configuration>
+```
+
+#### Log4j2 example
+
+`log4j2.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="info">
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{ISO8601} %-5level [%t] %C{1.}: %msg%n%throwable"/>
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="Console"/>
+    </Root>
+
+    <!-- Setting SynchroTask log level to DEBUG -->
+    <Logger name="org.vg2902.synchrotask" level="debug" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+  </Loggers>
+</Configuration>
+```
 
 ## What's new
 ### 1.0.0
