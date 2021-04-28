@@ -1,5 +1,8 @@
 # SynchroTask
 
+[![Apache License 2](https://img.shields.io/badge/license-ASF2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.txt)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.vg2902/synchro-task-parent/badge.svg?gav=true)](https://maven-badges.herokuapp.com/maven-central/org.vg2902/synchro-task-parent)
+
 SynchroTask is a lightweight library which helps to synchronize Java routines in distributed environments.
 
 Synchronization is one of the most important parts in software development. 
