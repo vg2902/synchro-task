@@ -401,7 +401,7 @@ You can get the most detailed logs by setting `org.vg2902.synchrotask` log level
 ```
 
 ## What's new
-### 1.0.0
+### 0.1.0
 * Initial release
 * JDBC provider with support of Oracle and H2 databases
 * Extension for Spring Framework
