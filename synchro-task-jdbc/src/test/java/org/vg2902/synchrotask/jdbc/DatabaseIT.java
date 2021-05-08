@@ -39,7 +39,7 @@ public interface DatabaseIT {
 
     default void cleanupTable(Connection connection, String table) throws SQLException {
         Statement statement = connection.createStatement();
-        statement.executeUpdate("DELETE " + table);
+        statement.executeUpdate("DELETE FROM " + table);
         connection.commit();
     }
 

@@ -145,7 +145,7 @@ public enum SynchroTaskSQLSupport {
     }
 
     String getDeleteQuery(String tableName) {
-        return "DELETE " + tableName + " WHERE task_name = ? AND task_id = ?";
+        return "DELETE FROM " + tableName + " WHERE task_name = ? AND task_id = ?";
     }
 
     ConnectionState setupConnection(Connection connection, SynchroTask<?> task) throws SQLException {
