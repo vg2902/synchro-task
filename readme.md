@@ -426,7 +426,10 @@ You can get the most detailed logs by setting `org.vg2902.synchrotask` log level
 </Configuration>
 ```
 
-## What's new
+## Release notes
+### 0.2.0
+* JDBC provider now supports PostgreSQL database 
+
 ### 0.1.0
 * Initial release
 * JDBC provider with support of Oracle and H2 databases
