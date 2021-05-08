@@ -162,6 +162,8 @@ Check [Providers](#providers) section for the available `SynchroTaskService` imp
 `SynchroTaskJdbcService` uses a special **registry table** in a database to keep track of running tasks 
 and ensure synchronization. 
 You can use the SQL below to create it:
+
+#### H2
 ```iso92-sql
 CREATE TABLE synchro_task(
   task_name         VARCHAR2(100 CHAR) NOT NULL
@@ -169,6 +171,25 @@ CREATE TABLE synchro_task(
 , creation_time     TIMESTAMP(9)
 , CONSTRAINT synchro_task_pk PRIMARY KEY (task_name, task_id));
 ```
+
+#### PostgreSQL
+```iso92-sql
+CREATE TABLE synchro_task(
+  task_name         VARCHAR(100) NOT NULL
+, task_id           VARCHAR(100) NOT NULL
+, creation_time     TIMESTAMP(6)
+, CONSTRAINT synchro_task_pk PRIMARY KEY (task_name, task_id));
+```
+
+#### Oracle
+```iso92-sql
+CREATE TABLE synchro_task(
+  task_name         VARCHAR2(100 CHAR) NOT NULL
+, task_id           VARCHAR2(100 CHAR) NOT NULL
+, creation_time     TIMESTAMP(9)
+, CONSTRAINT synchro_task_pk PRIMARY KEY (task_name, task_id));
+```
+
 The table must have:
 * all three columns with exactly the same names and data types as they are defined above
 * a composite primary key based on **task_name** and **task_id** 
@@ -258,6 +279,7 @@ public void intercept(SynchroTask<?> task, Connection connection) {
 #### Requirements
 The following databases are currently supported:
 * H2
+* PostgreSQL
 * Oracle
 
 ## Spring integration

@@ -111,6 +111,33 @@ public enum SynchroTaskSQLSupport {
         }
     },
     /**
+     * Postgre-specific features:
+     * <ul>
+     *     <li>duplicate key error code is <b>23505</b>;</li>
+     *     <li>lock acquire error code is <b>55P03</b>;</li>
+     * </ul>
+     */
+    POSTGRES_SUPPORT {
+        private final Set<String> duplicateKeyErrorCodes = singleton("23505");
+        private final Set<String> cannotAcquireLockErrorCodes = singleton("55P03");
+
+        @Override
+        void restoreConnection(Connection connection, ConnectionState state) throws SQLException {
+            connection.rollback();
+            super.restoreConnection(connection, state);
+        }
+
+        @Override
+        boolean isDuplicateKey(SQLException e) {
+            return isExceptionSQLStateIn(e, duplicateKeyErrorCodes);
+        }
+
+        @Override
+        boolean isCannotAcquireLock(SQLException e) {
+            return isExceptionSQLStateIn(e, cannotAcquireLockErrorCodes);
+        }
+    },
+    /**
      * Oracle-specific features:
      * <ul>
      *     <li>duplicate key error code is <b>1</b>;</li>
@@ -172,6 +199,15 @@ public enum SynchroTaskSQLSupport {
         return ofNullable(errorCodes)
                 .orElse(emptyList())
                 .contains(e.getErrorCode());
+    }
+
+    private static boolean isExceptionSQLStateIn(SQLException e, Collection<String> errorCodes) {
+        if (e == null)
+            return false;
+
+        return ofNullable(errorCodes)
+                .orElse(emptyList())
+                .contains(e.getSQLState());
     }
 
     void restoreConnection(Connection connection, ConnectionState state) throws SQLException {

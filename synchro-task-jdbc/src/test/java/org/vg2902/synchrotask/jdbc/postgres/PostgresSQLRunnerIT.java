@@ -13,24 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.vg2902.synchrotask.jdbc;
+package org.vg2902.synchrotask.jdbc.postgres;
 
-import lombok.RequiredArgsConstructor;
+import org.junit.BeforeClass;
+import org.vg2902.synchrotask.jdbc.AbstractSQLRunnerIT;
 
-import static org.vg2902.synchrotask.jdbc.SynchroTaskSQLSupport.H2_SUPPORT;
-import static org.vg2902.synchrotask.jdbc.SynchroTaskSQLSupport.ORACLE_SUPPORT;
-import static org.vg2902.synchrotask.jdbc.SynchroTaskSQLSupport.POSTGRES_SUPPORT;
+import java.io.IOException;
 
 /**
- * Enlists currently supported database engines.
- *
- * @see SynchroTaskJdbcService
+ * {@link AbstractSQLRunnerIT} implementation for Postgres. During build, this test class is meant to be executed
+ * as part of {@link PostgresTestDocker} suite.
  */
-@RequiredArgsConstructor
-public enum SynchroTaskDatabaseSupport {
-    H2(H2_SUPPORT),
-    ORACLE(ORACLE_SUPPORT),
-    POSTGRESQL(POSTGRES_SUPPORT);
+public class PostgresSQLRunnerIT extends AbstractSQLRunnerIT implements PostgresDatabaseIT {
 
-    final SynchroTaskSQLSupport sqlSupport;
+    @BeforeClass
+    public static void init() throws IOException {
+        PostgresResource.init();
+    }
 }
