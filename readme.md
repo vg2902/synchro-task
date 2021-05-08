@@ -218,7 +218,7 @@ The `Connection` will always be closed before returning from the method.
 <dependency>
     <groupId>org.vg2902</groupId>
     <artifactId>synchro-task-jdbc</artifactId>
-    <version>1.0.0</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
@@ -239,7 +239,11 @@ SynchroTaskService service = SynchroTaskJdbcService
         .from(ds)
         .build;
 
-SynchroTask<Void> noop = SynchroTask.from(() -> {}).build();
+SynchroTask<Void> noop = SynchroTask
+        .from(() -> {})
+        .withId("foo")
+        .withName("bar")
+        .build();
 
 service.run(noop);
 ```
@@ -264,12 +268,16 @@ public void test(DataSource ds) {
     SynchroTaskService service = SynchroTaskJdbcService
         .from(ds)
         .withTableName("CUSTOM_SYNCHRO_TASK")
-        .withInterceptor((task, connection) -> this::intercept))
+        .withInterceptor(this::intercept)
         .build();
 
-    SynchroTask<Void> noop = SynchroTask.from(() -> {}).build();
+    SynchroTask<Void> noop = SynchroTask
+        .from(() -> {})
+        .withId("foo")
+        .withName("bar")
+        .build();
     
-    service.run(task);    
+    service.run(noop);    
 }
 
 public void intercept(SynchroTask<?> task, Connection connection) {
@@ -292,7 +300,7 @@ With SynchroTask Spring extension, you don't need to construct your tasks manual
 <dependency>
     <groupId>org.vg2902</groupId>
     <artifactId>synchro-task-spring</artifactId>
-    <version>1.0.0</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
