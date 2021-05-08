@@ -30,7 +30,7 @@ import java.util.Properties;
  * The environment can be configured in two ways:
  * <ul>
  *     <li>
- *         using Docker via <a href=https://www.testcontainers.org/>TestContainers</a> based on
+ *         using Docker via <a href=https://www.testcontainers.org/modules/databases/oraclexe/>TestContainers</a> based on
  *         <a href=https://hub.docker.com/r/oracleinanutshell/oracle-xe-11g>Oracle XE 11g</a> image.
  *         Note, that the image size is 2.13Gb, so when you run it for the first time,
  *         it may take a while for Docker to download it.
