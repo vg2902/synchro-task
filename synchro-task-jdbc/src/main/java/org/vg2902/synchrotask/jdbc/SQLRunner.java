@@ -26,10 +26,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Collection;
-
-import static java.util.Collections.emptyList;
-import static java.util.Optional.ofNullable;
 
 /**
  * Implements low-level SQL operations required by the framework to maintain the given task control row
@@ -131,7 +127,7 @@ public class SQLRunner implements AutoCloseable {
      * <b>false</b> otherwise
      */
     public boolean isCannotAcquireLock(SQLException e) {
-        return isExceptionErrorCodeIn(e, sqlSupport.getCannotAcquireLockErrorCodes());
+        return sqlSupport.isCannotAcquireLock(e);
     }
 
     /**
@@ -142,7 +138,7 @@ public class SQLRunner implements AutoCloseable {
      * <b>false</b> otherwise
      */
     public boolean isDuplicateKey(SQLException e) {
-        return isExceptionErrorCodeIn(e, sqlSupport.getDuplicateKeyErrorCodes());
+        return sqlSupport.isDuplicateKey(e);
     }
 
     public void close() throws SQLException {
@@ -151,14 +147,5 @@ public class SQLRunner implements AutoCloseable {
 
         sqlSupport.restoreConnection(this.connection, this.connectionState);
         connection.close();
-    }
-
-    private boolean isExceptionErrorCodeIn(SQLException e, Collection<Integer> errorCodes) {
-        if (e == null)
-            return false;
-
-        return ofNullable(errorCodes)
-                .orElse(emptyList())
-                .contains(e.getErrorCode());
     }
 }

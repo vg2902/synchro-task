@@ -26,9 +26,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Set;
 
-import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -40,16 +38,6 @@ public class H2SQLRunnerIT extends AbstractSQLRunnerIT implements H2DatabaseIT {
     @BeforeClass
     public static void init() throws IOException, SQLException {
         H2Resource.init();
-    }
-
-    @Override
-    public Set<Integer> getDuplicateKeyErrorCodes() {
-        return singleton(23505);
-    }
-
-    @Override
-    public Set<Integer> getCannotAcquireLockErrorCodes() {
-        return singleton(50200);
     }
 
     /*

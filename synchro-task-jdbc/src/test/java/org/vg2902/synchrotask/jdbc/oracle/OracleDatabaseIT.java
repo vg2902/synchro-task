@@ -16,6 +16,7 @@
 package org.vg2902.synchrotask.jdbc.oracle;
 
 import org.vg2902.synchrotask.jdbc.DatabaseIT;
+import org.vg2902.synchrotask.jdbc.SynchroTaskSQLSupport;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -59,5 +60,10 @@ public interface OracleDatabaseIT extends DatabaseIT {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    default SynchroTaskSQLSupport getSQLSupport() {
+        return SynchroTaskSQLSupport.ORACLE_SUPPORT;
     }
 }

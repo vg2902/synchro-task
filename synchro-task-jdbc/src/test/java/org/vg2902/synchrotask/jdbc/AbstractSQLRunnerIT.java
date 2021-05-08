@@ -29,7 +29,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,10 +43,6 @@ import static org.awaitility.Awaitility.await;
 public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
     private static final long WAITING_SECONDS = 5;
-
-    protected abstract Set<Integer> getDuplicateKeyErrorCodes();
-
-    protected abstract Set<Integer> getCannotAcquireLockErrorCodes();
 
     @After
     public void afterTest() throws SQLException {
@@ -198,8 +193,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
             statement.executeQuery("SELECT * FROM " + TABLE_NAME + " WHERE task_name = 'TaskName1' AND task_id = 'TaskId1' FOR UPDATE");
 
 
-            assertThatThrownBy(() -> sqlRunner.selectForUpdate(true))
-                    .matches(e -> getCannotAcquireLockErrorCodes().contains(((SQLException) e).getErrorCode()));
+            assertThatThrownBy(() -> sqlRunner.selectForUpdate(true)).matches(e -> getSQLSupport().isCannotAcquireLock(((SQLException) e)));
         }
     }
 
@@ -235,8 +229,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
             connection.commit();
 
 
-            assertThatThrownBy(sqlRunner::insert)
-                    .matches(e -> getDuplicateKeyErrorCodes().contains(((SQLException) e).getErrorCode()));
+            assertThatThrownBy(sqlRunner::insert).matches(e -> getSQLSupport().isDuplicateKey((SQLException) e));
         }
     }
 

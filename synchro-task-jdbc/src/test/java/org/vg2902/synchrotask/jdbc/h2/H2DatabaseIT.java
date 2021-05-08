@@ -16,6 +16,7 @@
 package org.vg2902.synchrotask.jdbc.h2;
 
 import org.vg2902.synchrotask.jdbc.DatabaseIT;
+import org.vg2902.synchrotask.jdbc.SynchroTaskSQLSupport;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -48,9 +49,6 @@ public interface H2DatabaseIT extends DatabaseIT {
     default boolean isDatabaseSessionBlocked(Long blockedSessionId, Long blockingSessionId) {
         DataSource dataSource = getDataSource();
 
-        System.out.println("Blocked session id :"+blockedSessionId);
-        System.out.println("Blocking session id :"+blockingSessionId);
-
         try (final Connection connection = dataSource.getConnection();
              final PreparedStatement statement = connection.prepareStatement("SELECT * FROM information_schema.sessions WHERE id = ? AND blocker_id = ?")) {
 
@@ -62,5 +60,10 @@ public interface H2DatabaseIT extends DatabaseIT {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    default SynchroTaskSQLSupport getSQLSupport() {
+        return SynchroTaskSQLSupport.H2_SUPPORT;
     }
 }

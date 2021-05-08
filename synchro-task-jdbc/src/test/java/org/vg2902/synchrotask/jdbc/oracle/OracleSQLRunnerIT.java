@@ -19,9 +19,6 @@ import org.junit.BeforeClass;
 import org.vg2902.synchrotask.jdbc.AbstractSQLRunnerIT;
 
 import java.io.IOException;
-import java.util.Set;
-
-import static java.util.Collections.singleton;
 
 /**
  * {@link AbstractSQLRunnerIT} implementation for Oracle. During build, this test class is meant to be executed
@@ -32,15 +29,5 @@ public class OracleSQLRunnerIT extends AbstractSQLRunnerIT implements OracleData
     @BeforeClass
     public static void init() throws IOException {
         OracleResource.init();
-    }
-
-    @Override
-    public Set<Integer> getDuplicateKeyErrorCodes() {
-        return singleton(1);
-    }
-
-    @Override
-    public Set<Integer> getCannotAcquireLockErrorCodes() {
-        return singleton(54);
     }
 }

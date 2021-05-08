@@ -46,4 +46,6 @@ public interface DatabaseIT {
     Long getSessionId(Connection connection);
 
     boolean isDatabaseSessionBlocked(Long blockedSessionId, Long blockingSessionId);
+
+    SynchroTaskSQLSupport getSQLSupport();
 }

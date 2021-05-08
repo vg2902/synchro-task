@@ -24,18 +24,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.Set;
 
 import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
+import static java.util.Optional.ofNullable;
 import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
 
 /**
  * Implements database-specific features for each supported database engine.
  */
 @Slf4j
-enum SynchroTaskSQLSupport {
-    //    DB2,
+public enum SynchroTaskSQLSupport {
 
     /**
      * H2-specific features:
@@ -47,8 +49,10 @@ enum SynchroTaskSQLSupport {
      *     this property is restored prior to returning the connection back to the datasource.</li>
      * </ul>
      */
-    H2_SUPPORT(singleton(23505), singleton(50200)) {
-        private static final String UPDATE_TIMEOUT_QUERY = "SET LOCK_TIMEOUT ?";
+    H2_SUPPORT {
+        private final Set<Integer> duplicateKeyErrorCodes = singleton(23505);
+        private final Set<Integer> cannotAcquireLockErrorCodes = singleton(50200);
+        private final String UPDATE_TIMEOUT_QUERY = "SET LOCK_TIMEOUT ?";
 
         @Override
         String getSelectForUpdateNoWaitQuery(String tableName) {
@@ -81,6 +85,16 @@ enum SynchroTaskSQLSupport {
                 updateLockTimeout(connection, lockTimeoutInMillis);
         }
 
+        @Override
+        boolean isDuplicateKey(SQLException e) {
+            return isExceptionErrorCodeIn(e, duplicateKeyErrorCodes);
+        }
+
+        @Override
+        boolean isCannotAcquireLock(SQLException e) {
+            return isExceptionErrorCodeIn(e, cannotAcquireLockErrorCodes);
+        }
+
         private int getLockTimeout(Connection connection) throws SQLException {
             try (Statement currentTimeout = connection.createStatement()) {
                 ResultSet rs = currentTimeout.executeQuery("CALL LOCK_TIMEOUT()");
@@ -96,9 +110,6 @@ enum SynchroTaskSQLSupport {
             }
         }
     },
-    //    HSQLDB,
-    //    MSSQL,
-    //    MYSQL,
     /**
      * Oracle-specific features:
      * <ul>
@@ -106,17 +117,20 @@ enum SynchroTaskSQLSupport {
      *     <li>lock acquire error code is <b>54</b>;</li>
      * </ul>
      */
-    ORACLE_SUPPORT(singleton(1), singleton(54));
-    //    POSTGRESQL,
-    //    SQLITE;
+    ORACLE_SUPPORT {
+        private final Set<Integer> duplicateKeyErrorCodes = singleton(1);
+        private final Set<Integer> cannotAcquireLockErrorCodes = singleton(54);
 
-    private final Set<Integer> duplicateKeyErrorCodes;
-    private final Set<Integer> cannotAcquireLockErrorCodes;
+        @Override
+        boolean isDuplicateKey(SQLException e) {
+            return isExceptionErrorCodeIn(e, duplicateKeyErrorCodes);
+        }
 
-    SynchroTaskSQLSupport(Set<Integer> duplicateKeyErrorCodes, Set<Integer> cannotAcquireLockErrorCodes) {
-        this.duplicateKeyErrorCodes = duplicateKeyErrorCodes;
-        this.cannotAcquireLockErrorCodes = cannotAcquireLockErrorCodes;
-    }
+        @Override
+        boolean isCannotAcquireLock(SQLException e) {
+            return isExceptionErrorCodeIn(e, cannotAcquireLockErrorCodes);
+        }
+    };
 
     String getInsertQuery(String tableName) {
         return "INSERT INTO " + tableName + "(task_name, task_id, creation_time) VALUES (?, ?, ?)";
@@ -134,14 +148,6 @@ enum SynchroTaskSQLSupport {
         return "DELETE " + tableName + " WHERE task_name = ? AND task_id = ?";
     }
 
-    Set<Integer> getDuplicateKeyErrorCodes() {
-        return this.duplicateKeyErrorCodes;
-    }
-
-    Set<Integer> getCannotAcquireLockErrorCodes() {
-        return this.cannotAcquireLockErrorCodes;
-    }
-
     ConnectionState setupConnection(Connection connection, SynchroTask<?> task) throws SQLException {
         log.debug("Setting up connection {}", connection);
 
@@ -153,6 +159,19 @@ enum SynchroTaskSQLSupport {
         connection.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
 
         return state;
+    }
+
+    abstract boolean isDuplicateKey(SQLException e);
+
+    abstract boolean isCannotAcquireLock(SQLException e);
+
+    private static boolean isExceptionErrorCodeIn(SQLException e, Collection<Integer> errorCodes) {
+        if (e == null)
+            return false;
+
+        return ofNullable(errorCodes)
+                .orElse(emptyList())
+                .contains(e.getErrorCode());
     }
 
     void restoreConnection(Connection connection, ConnectionState state) throws SQLException {
