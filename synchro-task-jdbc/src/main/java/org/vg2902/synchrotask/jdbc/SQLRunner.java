@@ -68,9 +68,12 @@ public class SQLRunner implements AutoCloseable {
             stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
 
             stmt.executeUpdate();
-        }
 
-        connection.commit();
+            connection.commit();
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
+        }
     }
 
     /**
@@ -93,6 +96,9 @@ public class SQLRunner implements AutoCloseable {
             ResultSet resultSet = stmt.executeQuery();
 
             return resultSet.next();
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
         }
     }
 
@@ -107,16 +113,19 @@ public class SQLRunner implements AutoCloseable {
         String sql = sqlSupport.getDeleteQuery(tableName);
         log.debug(sql);
 
-        int cnt;
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, String.valueOf(task.getTaskName()));
             stmt.setString(2, String.valueOf(task.getTaskId()));
 
-            cnt = stmt.executeUpdate();
-        }
+            int cnt = stmt.executeUpdate();
 
-        connection.commit();
-        return cnt > 0;
+            connection.commit();
+
+            return cnt > 0;
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
+        }
     }
 
     /**
