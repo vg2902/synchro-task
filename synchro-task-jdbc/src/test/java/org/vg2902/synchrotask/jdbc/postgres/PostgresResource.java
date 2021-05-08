@@ -68,13 +68,10 @@ public class PostgresResource {
         } else {
             String imageName = datasourceProperties.getProperty("DOCKER_IMAGE_NAME");
             String tag = datasourceProperties.getProperty("DOCKER_IMAGE_TAG");
-            //String databaseSetupScript = datasourceProperties.getProperty("DATABASE_SETUP_SCRIPT");
-            //String entryPointPath = datasourceProperties.getProperty("DOCKER_INIT_SQL_SCRIPT_ENTRY_POINT");
             String schemaSetupScript = datasourceProperties.getProperty("SCHEMA_SETUP_SCRIPT");
 
             postgres = new PostgreSQLContainer<>(DockerImageName.parse(imageName).withTag(tag))
                     .withDatabaseName(databaseName)
-                    //.withClasspathResourceMapping(databaseSetupScript, entryPointPath, BindMode.READ_ONLY)
                     .withUsername(userName)
                     .withPassword(password)
                     .withInitScript(schemaSetupScript);
