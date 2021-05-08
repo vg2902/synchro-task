@@ -23,8 +23,9 @@ and **SynchroTask** library is one of those agents.
   * [JDBC](#jdbc)
 * [Spring integration](#spring-integration)
 * [Logging](#logging)
-* [What's new](#whats-new)
-  * [1.0.0](#100)
+* [Release notes](#release-notes)
+  * [0.2.0](#020)
+  * [0.1.0](#010)
 
 ## Concepts
 The library does not implement any lock primitives on its own. 
@@ -376,7 +377,7 @@ Spring versions from 3.0.0 and above are supported
 SynchroTask uses [SLF4J](http://www.slf4j.org/) logging facade.
 You can get the most detailed logs by setting `org.vg2902.synchrotask` log level to `DEBUG`.
 
-#### Logback example
+#### Logback
 
 `logback.xml`:
 
@@ -400,7 +401,7 @@ You can get the most detailed logs by setting `org.vg2902.synchrotask` log level
 </configuration>
 ```
 
-#### Log4j2 example
+#### Log4j2
 
 `log4j2.xml`:
 
