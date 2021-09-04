@@ -16,7 +16,9 @@
 package org.vg2902.synchrotask.jdbc;
 
 import lombok.extern.slf4j.Slf4j;
+import org.vg2902.synchrotask.core.api.SynchroTaskLockManager;
 import org.vg2902.synchrotask.core.api.SynchroTask;
+import org.vg2902.synchrotask.core.exception.SynchroTaskException;
 
 import java.sql.SQLException;
 
@@ -28,7 +30,7 @@ import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
  * @see SynchroTaskJdbcService
  */
 @Slf4j
-final class LockManager implements AutoCloseable {
+final class SynchroTaskJdbcLockManager implements SynchroTaskLockManager {
 
     enum LockResult {
         LOCK_RESULT_OK,
@@ -39,7 +41,7 @@ final class LockManager implements AutoCloseable {
     private final SQLRunner sqlRunner;
     private final SynchroTask<?> task;
 
-    LockManager(SQLRunner sqlRunner) {
+    SynchroTaskJdbcLockManager(SQLRunner sqlRunner) {
         this.sqlRunner = sqlRunner;
         this.task = sqlRunner.getTask();
     }
@@ -55,26 +57,31 @@ final class LockManager implements AutoCloseable {
      * If for some reason the row has been deleted between the steps, the method will re-try.
      *
      * @return <b>true</b> if the lock is acquired successfully, <b>false</b> otherwise
-     * @throws SQLException in case of any exception at the database level
+     * @throws SynchroTaskException in case of any exception
      */
-    public boolean lock() throws SQLException {
+    @Override
+    public boolean lock() throws SynchroTaskException {
         log.debug("Locking {}", task);
 
-        while (true) {
-            this.createLockEntry();
-            LockResult lockResult = this.acquireLock();
+        try {
+            while (true) {
+                this.createLockEntry();
+                LockResult lockResult = this.acquireLock();
 
-            switch (lockResult) {
-                case LOCK_RESULT_OK:
-                    log.debug("Lock is successfully acquired for {}", task);
-                    return true;
-                case LOCK_RESULT_LOCKED_BY_ANOTHER_TASK:
-                    log.debug("Lock entry for {} is being used by another task", task);
-                    return false;
-                case LOCK_RESULT_NOT_FOUND:
-                    log.debug("Lock entry for {} is not found. Re-trying.", task);
-                    break;
+                switch (lockResult) {
+                    case LOCK_RESULT_OK:
+                        log.debug("Lock is successfully acquired for {}", task);
+                        return true;
+                    case LOCK_RESULT_LOCKED_BY_ANOTHER_TASK:
+                        log.debug("Lock entry for {} is being used by another task", task);
+                        return false;
+                    case LOCK_RESULT_NOT_FOUND:
+                        log.debug("Lock entry for {} is not found. Re-trying.", task);
+                        break;
+                }
             }
+        } catch (Exception e) {
+            throw new SynchroTaskException(e);
         }
     }
 
@@ -115,12 +122,17 @@ final class LockManager implements AutoCloseable {
 
     /**
      * Unlocks previously locked task by deleting the control row from the registry table
-     * @throws SQLException in case of any exception at the database level
+     * @throws SynchroTaskException in case of any exception
      */
-    public void unlock() throws SQLException {
+    @Override
+    public void unlock() throws SynchroTaskException {
         log.debug("Releasing lock for {}", task);
 
-        sqlRunner.delete();
+        try {
+            sqlRunner.delete();
+        } catch (Exception e) {
+            throw new SynchroTaskException(e);
+        }
     }
 
     @Override

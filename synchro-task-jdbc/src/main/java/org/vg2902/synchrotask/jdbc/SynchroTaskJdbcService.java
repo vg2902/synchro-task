@@ -147,7 +147,7 @@ public class SynchroTaskJdbcService implements SynchroTaskService {
         T result;
 
         try (SQLRunner sqlRunner = new SQLRunner(dataSource, tableName, task);
-             LockManager lockManager = new LockManager(sqlRunner)) {
+             SynchroTaskJdbcLockManager lockManager = new SynchroTaskJdbcLockManager(sqlRunner)) {
 
             if (interceptor != null)
                 interceptor.accept(task, sqlRunner.getConnection());
