@@ -43,7 +43,7 @@ public final class ThrowableTaskUtils {
      * @param <T> <b>supplier</b> return type
      * @return a {@link Supplier} which returns a {@link ThrowableTaskResult} constructed from the given <b>supplier</b> outcome
      */
-    public static <T> Supplier<ThrowableTaskResult<T>> getSupplier(ThrowableSupplier<T> supplier) {
+    public static <T> Supplier<ThrowableTaskResult<T>> getSupplier(ThrowableSupplier<T, Throwable> supplier) {
         return () -> get(supplier);
     }
 
@@ -54,7 +54,7 @@ public final class ThrowableTaskUtils {
      * @param <T> <b>supplier</b> return type
      * @return {@link ThrowableTaskResult} constructed from the given <b>supplier</b> outcome
      */
-    public static <T> ThrowableTaskResult<T> get(ThrowableSupplier<T> supplier) {
+    public static <T> ThrowableTaskResult<T> get(ThrowableSupplier<T, Throwable> supplier) {
         try {
             return result(supplier.get());
         } catch (Throwable throwable) {

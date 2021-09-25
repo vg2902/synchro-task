@@ -15,16 +15,17 @@
  */
 package org.vg2902.synchrotask.core.utils;
 
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /**
- * Enhanced {@link Supplier} representing the operations that may throw an error or exception.
+ * Enhanced {@link Function} representing the operations that may throw an error or exception.
  *
- * @param <T> result type
+ * @param <T> argument type
+ * @param <R> result type
  * @param <E> exception type
- * @see Supplier
+ * @see Function
  */
 @FunctionalInterface
-public interface ThrowableSupplier<T, E extends Throwable> {
-    T get() throws E;
+public interface ThrowableFunction<T, R, E extends Throwable> {
+    R apply(T t) throws E;
 }

@@ -15,16 +15,17 @@
  */
 package org.vg2902.synchrotask.core.utils;
 
-import java.util.function.Supplier;
+import java.util.function.BiConsumer;
 
 /**
- * Enhanced {@link Supplier} representing the operations that may throw an error or exception.
+ * Enhanced {@link BiConsumer} representing the operations that may throw an error or exception.
  *
- * @param <T> result type
+ * @param <T> first argument type
+ * @param <U> second argument type
  * @param <E> exception type
- * @see Supplier
+ * @see BiConsumer
  */
 @FunctionalInterface
-public interface ThrowableSupplier<T, E extends Throwable> {
-    T get() throws E;
+public interface ThrowableBiConsumer<T, U, E extends Throwable> {
+    void accept(T t, U u) throws E;
 }
