@@ -8,8 +8,6 @@
         <version>0.2.1-SNAPSHOT</version>
     </parent>
 
-    <packaging>pom</packaging>
-
     <artifactId>synchro-task-spring-3-test</artifactId>
 
     <properties>
