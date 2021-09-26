@@ -37,6 +37,8 @@ final class SQLRunners {
             switch (database) {
                 case H2:
                     return new H2SQLRunner<>(datasource, tableName, task);
+                case MYSQL:
+                    return new MySQLRunner<>(datasource, tableName, task);
                 case ORACLE:
                     return new OracleSQLRunner<>(datasource, tableName, task);
                 case POSTGRESQL:

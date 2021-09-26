@@ -1,0 +1,1 @@
+GRANT SELECT ON performance_schema.* TO 'synchro_task';

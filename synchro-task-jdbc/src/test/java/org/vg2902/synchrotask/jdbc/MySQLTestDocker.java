@@ -15,17 +15,28 @@
  */
 package org.vg2902.synchrotask.jdbc;
 
-import lombok.RequiredArgsConstructor;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
+
+import java.io.IOException;
 
 /**
- * Enlists currently supported database engines
- *
- * @see SynchroTaskJdbcService
+ * Integration test suite for MySQL
  */
-@RequiredArgsConstructor
-public enum SynchroTaskDatabaseSupport {
-    H2,
-    MYSQL,
-    ORACLE,
-    POSTGRESQL
+@RunWith(Suite.class)
+@SuiteClasses({MySQLRunnerIT.class, MySQLSynchroTaskJdbcServiceIT.class})
+public class MySQLTestDocker {
+
+    @BeforeClass
+    public static void init() throws IOException {
+        MySQLResource.init();
+    }
+
+    @AfterClass
+    public static void shutdown() {
+        MySQLResource.shutdown();
+    }
 }
