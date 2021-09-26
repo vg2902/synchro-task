@@ -91,8 +91,8 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
              final SQLRunner sqlRunner2 = new SQLRunner(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName2", "TaskId2"));
              final SQLRunner sqlRunner3 = new SQLRunner(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName3", "TaskId3"))) {
 
-            statement.executeUpdate("INSERT INTO SYNCHRO_TASK(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
-            statement.executeUpdate("INSERT INTO SYNCHRO_TASK(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
             connection.commit();
 
 

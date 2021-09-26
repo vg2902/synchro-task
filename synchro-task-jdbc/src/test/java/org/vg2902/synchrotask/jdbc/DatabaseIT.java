@@ -25,7 +25,7 @@ import java.sql.Statement;
  */
 public interface DatabaseIT {
 
-    String TABLE_NAME = "SYNCHRO_TASK";
+    String TABLE_NAME = "synchro_task";
 
     DataSource getDataSource();
 
