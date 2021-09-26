@@ -15,16 +15,18 @@
  */
 package org.vg2902.synchrotask.jdbc;
 
-import lombok.RequiredArgsConstructor;
+import org.junit.BeforeClass;
+
+import java.io.IOException;
 
 /**
- * Enlists currently supported database engines
- *
- * @see SynchroTaskJdbcService
+ * {@link AbstractSQLRunnerIT} implementation for Postgres. During build, this test class is meant to be executed
+ * as part of {@link PostgresTestDocker} suite.
  */
-@RequiredArgsConstructor
-public enum SynchroTaskDatabaseSupport {
-    H2,
-    ORACLE,
-    POSTGRESQL
+public class PostgresSQLRunnerIT extends AbstractSQLRunnerIT implements PostgresDatabaseIT {
+
+    @BeforeClass
+    public static void init() throws IOException {
+        PostgresResource.init();
+    }
 }

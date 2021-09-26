@@ -27,24 +27,27 @@ import java.sql.SQLException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.vg2902.synchrotask.core.api.CollisionStrategy.RETURN;
 import static org.vg2902.synchrotask.core.api.CollisionStrategy.THROW;
 import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
+import static org.vg2902.synchrotask.jdbc.EntryCreationResult.CREATION_RESULT_ALREADY_EXISTS;
+import static org.vg2902.synchrotask.jdbc.EntryLockResult.LOCK_RESULT_LOCKED_BY_ANOTHER_TASK;
+import static org.vg2902.synchrotask.jdbc.EntryLockResult.LOCK_RESULT_NOT_FOUND;
+import static org.vg2902.synchrotask.jdbc.EntryLockResult.LOCK_RESULT_OK;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SynchroTaskJdbcLockManagerTest {
 
     @Mock
-    private SQLRunner sqlRunner;
+    private AbstractSQLRunner<?> sqlRunner;
 
     @Test
     public void locksSuccessfully() throws SQLException {
         doReturn(getDummyTask()).when(sqlRunner).getTask();
-        doReturn(true).when(sqlRunner).selectForUpdate(anyBoolean());
+        doReturn(LOCK_RESULT_OK).when(sqlRunner).acquireLock();
 
         SynchroTaskJdbcLockManager lockManager = new SynchroTaskJdbcLockManager(sqlRunner);
         boolean isLocked = lockManager.lock();
@@ -54,12 +57,9 @@ public class SynchroTaskJdbcLockManagerTest {
 
     @Test
     public void locksSuccessfullyIfEntryAlreadyExists() throws SQLException {
-        SQLException e = new SQLException();
-
         doReturn(getDummyTask()).when(sqlRunner).getTask();
-        doThrow(e).when(sqlRunner).insert();
-        doReturn(true).when(sqlRunner).isDuplicateKey(e);
-        doReturn(true).when(sqlRunner).selectForUpdate(anyBoolean());
+        doReturn(CREATION_RESULT_ALREADY_EXISTS).when(sqlRunner).createLockEntry();
+        doReturn(LOCK_RESULT_OK).when(sqlRunner).acquireLock();
 
         SynchroTaskJdbcLockManager lockManager = new SynchroTaskJdbcLockManager(sqlRunner);
         boolean isLocked = lockManager.lock();
@@ -69,11 +69,8 @@ public class SynchroTaskJdbcLockManagerTest {
 
     @Test
     public void cannotLockIfAlreadyLocked() throws SQLException {
-        SQLException e = new SQLException();
-
         doReturn(getDummyTask()).when(sqlRunner).getTask();
-        doThrow(e).when(sqlRunner).selectForUpdate(anyBoolean());
-        doReturn(true).when(sqlRunner).isCannotAcquireLock(e);
+        doReturn(LOCK_RESULT_LOCKED_BY_ANOTHER_TASK).when(sqlRunner).acquireLock();
 
         SynchroTaskJdbcLockManager lockManager = new SynchroTaskJdbcLockManager(sqlRunner);
         boolean isLocked = lockManager.lock();
@@ -86,8 +83,7 @@ public class SynchroTaskJdbcLockManagerTest {
         SQLException e = new SQLException();
 
         doReturn(getDummyTask()).when(sqlRunner).getTask();
-        doThrow(e).when(sqlRunner).insert();
-        doReturn(false).when(sqlRunner).isDuplicateKey(e);
+        doThrow(e).when(sqlRunner).createLockEntry();
 
         SynchroTaskJdbcLockManager lockManager = new SynchroTaskJdbcLockManager(sqlRunner);
         assertThatThrownBy(lockManager::lock)
@@ -100,8 +96,7 @@ public class SynchroTaskJdbcLockManagerTest {
         SQLException e = new SQLException();
 
         doReturn(getDummyTask()).when(sqlRunner).getTask();
-        doThrow(e).when(sqlRunner).selectForUpdate(anyBoolean());
-        doReturn(false).when(sqlRunner).isCannotAcquireLock(e);
+        doThrow(e).when(sqlRunner).acquireLock();
 
         SynchroTaskJdbcLockManager lockManager = new SynchroTaskJdbcLockManager(sqlRunner);
         assertThatThrownBy(lockManager::lock)
@@ -112,9 +107,9 @@ public class SynchroTaskJdbcLockManagerTest {
     @Test
     public void retriesIfLockEntryIsStolenBetweenCreationAndLocking() throws SQLException {
         doReturn(getDummyTask()).when(sqlRunner).getTask();
-        when(sqlRunner.selectForUpdate(anyBoolean()))
-                .thenReturn(false)
-                .thenReturn(true);
+        when(sqlRunner.acquireLock())
+                .thenReturn(LOCK_RESULT_NOT_FOUND)
+                .thenReturn(LOCK_RESULT_OK);
 
         SynchroTaskJdbcLockManager lockManager = new SynchroTaskJdbcLockManager(sqlRunner);
         boolean isLocked = lockManager.lock();
@@ -124,22 +119,22 @@ public class SynchroTaskJdbcLockManagerTest {
 
     @Test
     public void recognizesWaitingTasks() throws SQLException {
-        handlesTaskCollisionStrategy(getDummyTask(WAIT), false);
+        handlesTaskCollisionStrategy(getDummyTask(WAIT));
     }
 
     @Test
     public void recognizesThrowingTasks() throws SQLException {
-        handlesTaskCollisionStrategy(getDummyTask(THROW), true);
+        handlesTaskCollisionStrategy(getDummyTask(THROW));
     }
 
     @Test
     public void recognizesReturningTasks() throws SQLException {
-        handlesTaskCollisionStrategy(getDummyTask(RETURN), true);
+        handlesTaskCollisionStrategy(getDummyTask(RETURN));
     }
 
-    private void handlesTaskCollisionStrategy(SynchroTask<?> synchroTask, boolean noWait) throws SQLException {
+    private void handlesTaskCollisionStrategy(SynchroTask<?> synchroTask) throws SQLException {
         doReturn(synchroTask).when(sqlRunner).getTask();
-        doReturn(true).when(sqlRunner).selectForUpdate(noWait);
+        doReturn(LOCK_RESULT_OK).when(sqlRunner).acquireLock();
 
         SynchroTaskJdbcLockManager lockManager = new SynchroTaskJdbcLockManager(sqlRunner);
         boolean isLocked = lockManager.lock();

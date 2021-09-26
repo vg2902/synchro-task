@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.vg2902.synchrotask.jdbc.h2;
+package org.vg2902.synchrotask.jdbc;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.h2.Driver;

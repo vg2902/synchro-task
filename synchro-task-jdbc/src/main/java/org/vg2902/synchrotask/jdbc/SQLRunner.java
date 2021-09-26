@@ -15,146 +15,131 @@
  */
 package org.vg2902.synchrotask.jdbc;
 
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.vg2902.synchrotask.core.api.SynchroTask;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.util.Collection;
+
+import static java.util.Collections.emptyList;
+import static java.util.Optional.ofNullable;
 
 /**
- * Implements low-level SQL operations required by the framework to maintain the given task control row
- * in the registry table.
+ * Encapsulates low-level database operations for creating, locking and removing a control row in the registry table
+ * for the given {@link SynchroTask} instance.
+ * <p>
+ * Implementations are expected to be parameterized by the following arguments:
+ * <ul>
+ *     <li>a {@link SynchroTask} instance</li>
+ *     <li>a {@link Connection} to execute SQL commands</li>
+ *     <li>the registry table name</li>
+ * </ul>
+ * <p>
+ * The general contract for the implementations is to ensure that the underlying {@link Connection} is closed when
+ * {@link #close()} method is called, and all the connection properties that have been changed since the instance creation
+ * are restored before closing.
+ * Once closed, an instance should not allow further use, such attempts should throw an {@link IllegalStateException}.
  *
+ * @param <T> underlying {@link SynchroTask} return type
  * @see SynchroTask
  * @see SynchroTaskJdbcService
  */
-@Getter
-@Slf4j
-public class SQLRunner implements AutoCloseable {
-
-    private final SynchroTaskSQLSupport sqlSupport;
-    private final Connection connection;
-    private final String tableName;
-    private final SynchroTask<?> task;
-    private final ConnectionState connectionState;
-
-    public SQLRunner(DataSource datasource, String tableName, SynchroTask<?> task) throws SQLException {
-        this.connection = datasource.getConnection();
-        this.task = task;
-        this.tableName = tableName;
-        this.sqlSupport = SynchroTaskSQLSupport.from(this.connection);
-
-        this.connectionState = this.sqlSupport.setupConnection(connection, task);
-    }
+interface SQLRunner<T> extends AutoCloseable {
 
     /**
-     * Inserts the given task control row into the registry table and commits current transaction.
+     * Inserts a control row for the given {@link SynchroTask} into the registry table.
+     * This method should commit the current transaction.
      *
+     * @return {@link EntryCreationResult}
      * @throws SQLException in case of any exception at the database level
      */
-    public void insert() throws SQLException {
-        String sql = sqlSupport.getInsertQuery(tableName);
-        log.debug(sql);
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, String.valueOf(task.getTaskName()));
-            stmt.setString(2, String.valueOf(task.getTaskId()));
-            stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
-
-            stmt.executeUpdate();
-
-            connection.commit();
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
-        }
-    }
+    EntryCreationResult createLockEntry() throws SQLException;
 
     /**
-     * Executes <b>SELECT FOR UPDATE</b> statement for the given task control row.
-     * Current transaction remains uncommitted.
+     * Locks the control row created in the registry table for the underlying {@link SynchroTask}.
+     * <p>
+     * When the row is already locked by another session, the method behaviour should depend on
+     * the task {@link org.vg2902.synchrotask.core.api.CollisionStrategy}.
+     * <p>
+     * If it is set to {@link org.vg2902.synchrotask.core.api.CollisionStrategy#WAIT}, then the method should wait
+     * until the other sessions release the lock, otherwise it should immediately try to acquire a lock and return.
+     * If the lock is acquired successfully, the method should leave the current transaction uncommitted.
+     * <p>
+     * Implementations should check for specific vendor error codes to correctly identify a locking exception
      *
-     * @param noWait whether <b>SELECT FOR UPDATE</b> statement should be executed with <b>NO WAIT</b> clause
-     * @return <b>true</b> if the the statement completed successfully returning the row,
-     * <b>false</b> if the row was not found
+     * @return {@link EntryLockResult}
      * @throws SQLException in case of any exception at the database level
      */
-    public boolean selectForUpdate(boolean noWait) throws SQLException {
-        String sql = noWait ? sqlSupport.getSelectForUpdateNoWaitQuery(tableName) : sqlSupport.getSelectForUpdateQuery(tableName);
-        log.debug(sql);
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, String.valueOf(task.getTaskName()));
-            stmt.setString(2, String.valueOf(task.getTaskId()));
-
-            ResultSet resultSet = stmt.executeQuery();
-
-            return resultSet.next();
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
-        }
-    }
+    EntryLockResult acquireLock() throws SQLException;
 
     /**
-     * Deletes the given task control row and commits current transaction.
+     * Deletes a control row for the given {@link SynchroTask}.
+     * This method should commit the current transaction.
      *
-     * @return <b>true</b> if the statement completed successfully deleting the row,
-     * <b>false</b> if the control row was not found
+     * @return {@link EntryRemovalResult}
      * @throws SQLException in case of any exception at the database level
      */
-    public boolean delete() throws SQLException {
-        String sql = sqlSupport.getDeleteQuery(tableName);
-        log.debug(sql);
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, String.valueOf(task.getTaskName()));
-            stmt.setString(2, String.valueOf(task.getTaskId()));
-
-            int cnt = stmt.executeUpdate();
-
-            connection.commit();
-
-            return cnt > 0;
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
-        }
-    }
+    EntryRemovalResult removeLockEntry() throws SQLException;
 
     /**
-     * Checks whether the given exception instance represents locking failure
+     * Checks whether the given exception is caused by locking failure
      *
      * @param e {@link SQLException} instance
      * @return <b>true</b> if the exception occurred because the database failed to acquire a lock,
      * <b>false</b> otherwise
      */
-    public boolean isCannotAcquireLock(SQLException e) {
-        return sqlSupport.isCannotAcquireLock(e);
-    }
+    boolean isCannotAcquireLock(SQLException e);
 
     /**
-     * Checks whether the given exception instance represents is caused by duplicated key
+     * Checks whether the given exception is caused by duplicated key
      *
      * @param e {@link SQLException} instance
      * @return <b>true</b> if the exception occurred because the database failed due to duplicated key,
      * <b>false</b> otherwise
      */
-    public boolean isDuplicateKey(SQLException e) {
-        return sqlSupport.isDuplicateKey(e);
+    boolean isDuplicateKey(SQLException e);
+
+    @Override
+    void close() throws SQLException;
+
+    /**
+     * Checks whether this instance is closed
+     *
+     * @return <b>true</b> if {@link #close()} method has already been called, <b>false</b> otherwise
+     */
+    boolean isClosed();
+
+    /**
+     * @return underlying {@link SynchroTask}
+     */
+    SynchroTask<T> getTask();
+
+
+    /**
+     * @return the registry table name
+     */
+    String getTableName();
+
+    /**
+     * @return underlying {@link Connection}
+     */
+    Connection getConnection();
+
+    default boolean isExceptionErrorCodeIn(SQLException e, Collection<Integer> errorCodes) {
+        if (e == null)
+            return false;
+
+        return ofNullable(errorCodes)
+                .orElse(emptyList())
+                .contains(e.getErrorCode());
     }
 
-    public void close() throws SQLException {
-        if (connection.isClosed())
-            return;
+    default boolean isExceptionSQLStateIn(SQLException e, Collection<String> errorCodes) {
+        if (e == null)
+            return false;
 
-        sqlSupport.restoreConnection(this.connection, this.connectionState);
-        connection.close();
+        return ofNullable(errorCodes)
+                .orElse(emptyList())
+                .contains(e.getSQLState());
     }
 }

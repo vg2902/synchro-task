@@ -59,7 +59,7 @@ class SynchroTaskAdvice implements MethodInterceptor {
         log.debug("SynchroTask service name: {}", serviceName);
 
         SynchroTaskService service = getServiceBean(serviceName);
-        log.debug("SynchroTaskService bean : {}", service);
+        log.debug("SynchroTaskService bean: {}", service);
 
         Object taskName = SynchroTaskAopUtils.getAnnotatedArgValue(methodInvocation, TaskName.class);
         log.debug("taskName value in SynchroTaskAdvice: {}", taskName);

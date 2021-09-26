@@ -15,16 +15,28 @@
  */
 package org.vg2902.synchrotask.jdbc;
 
-import lombok.RequiredArgsConstructor;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
+
+import java.io.IOException;
 
 /**
- * Enlists currently supported database engines
- *
- * @see SynchroTaskJdbcService
+ * Integration test suite for Oracle
  */
-@RequiredArgsConstructor
-public enum SynchroTaskDatabaseSupport {
-    H2,
-    ORACLE,
-    POSTGRESQL
+@RunWith(Suite.class)
+@SuiteClasses({OracleSQLRunnerIT.class, OracleSynchroTaskJdbcServiceIT.class})
+public class OracleTestDocker {
+
+    @BeforeClass
+    public static void init() throws IOException {
+        OracleResource.init();
+    }
+
+    @AfterClass
+    public static void shutdown() {
+        OracleResource.shutdown();
+    }
 }

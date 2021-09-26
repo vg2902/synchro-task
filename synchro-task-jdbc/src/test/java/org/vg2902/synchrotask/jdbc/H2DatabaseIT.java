@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.vg2902.synchrotask.jdbc.h2;
-
-import org.vg2902.synchrotask.jdbc.DatabaseIT;
-import org.vg2902.synchrotask.jdbc.SynchroTaskSQLSupport;
+package org.vg2902.synchrotask.jdbc;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -60,10 +57,5 @@ public interface H2DatabaseIT extends DatabaseIT {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    default SynchroTaskSQLSupport getSQLSupport() {
-        return SynchroTaskSQLSupport.H2_SUPPORT;
     }
 }

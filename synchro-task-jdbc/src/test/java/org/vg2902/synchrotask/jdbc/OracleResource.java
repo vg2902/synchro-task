@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.vg2902.synchrotask.jdbc.postgres;
+package org.vg2902.synchrotask.jdbc;
 
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.JdbcDatabaseContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.containers.OracleContainer;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -26,25 +26,25 @@ import java.io.InputStreamReader;
 import java.util.Properties;
 
 /**
- * Contains Postgres test environment init/shutdown logic.
+ * Contains Oracle test environment init/shutdown logic.
  * The environment can be configured in two ways:
  * <ul>
  *     <li>
- *         using Docker via <a href=https://www.testcontainers.org/modules/databases/postgres/>TestContainers</a> based on
- *         <a href=https://hub.docker.com/_/postgres>Postgres</a> image.
- *         Note, that the image size is about 70Mb, so when you run it for the first time,
+ *         using Docker via <a href=https://www.testcontainers.org/modules/databases/oraclexe/>TestContainers</a> based on
+ *         <a href=https://hub.docker.com/r/oracleinanutshell/oracle-xe-11g>Oracle XE 11g</a> image.
+ *         Note, that the image size is 2.13Gb, so when you run it for the first time,
  *         it may take a while for Docker to download it.
  *     </li>
- *     <li>using external Postgres database instance;</li>
+ *     <li>using external Oracle database instance;</li>
  * </ul>
- * Check <b>resources/database-setup/postgres/datasource.postgres.properties</b> for the options.
+ * Check <b>resources/database-setup/oracle/datasource.oracle.properties</b> for the options.
  */
-public class PostgresResource {
+public class OracleResource {
 
-    private static final String datasourcePropertiesFile = "database-setup/postgres/datasource.postgres.properties";
+    private static final String datasourcePropertiesFile = "database-setup/oracle/datasource.oracle.properties";
     private static final Properties datasourceProperties = new Properties();
 
-    private static JdbcDatabaseContainer<?> postgres;
+    private static JdbcDatabaseContainer<?> oracle;
     public static DataSource datasource = null;
 
     public static synchronized void init() throws IOException {
@@ -57,7 +57,6 @@ public class PostgresResource {
 
         String userName = datasourceProperties.getProperty("USER_NAME");
         String password = datasourceProperties.getProperty("PASSWORD");
-        String databaseName = datasourceProperties.getProperty("DATABASE_NAME");
         String driverName = datasourceProperties.getProperty("DRIVER_NAME");
 
         String url;
@@ -67,17 +66,18 @@ public class PostgresResource {
             url = datasourceProperties.getProperty("EXTERNAL_URL");
         } else {
             String imageName = datasourceProperties.getProperty("DOCKER_IMAGE_NAME");
-            String tag = datasourceProperties.getProperty("DOCKER_IMAGE_TAG");
+            String databaseSetupScript = datasourceProperties.getProperty("DATABASE_SETUP_SCRIPT");
+            String entryPointPath = datasourceProperties.getProperty("DOCKER_INIT_SQL_SCRIPT_ENTRY_POINT");
             String schemaSetupScript = datasourceProperties.getProperty("SCHEMA_SETUP_SCRIPT");
 
-            postgres = new PostgreSQLContainer<>(DockerImageName.parse(imageName).withTag(tag))
-                    .withDatabaseName(databaseName)
+            oracle = new OracleContainer(imageName)
+                    .withClasspathResourceMapping(databaseSetupScript, entryPointPath, BindMode.READ_ONLY)
                     .withUsername(userName)
                     .withPassword(password)
                     .withInitScript(schemaSetupScript);
 
-            postgres.start();
-            url = postgres.getJdbcUrl();
+            oracle.start();
+            url = oracle.getJdbcUrl();
         }
 
         datasource = initDataSource(url, userName, password, driverName);
@@ -98,7 +98,7 @@ public class PostgresResource {
     }
 
     public static void shutdown() {
-        if (postgres != null && postgres.isRunning())
-            postgres.stop();
+        if (oracle != null && oracle.isRunning())
+            oracle.stop();
     }
 }

@@ -13,30 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.vg2902.synchrotask.jdbc.postgres;
+package org.vg2902.synchrotask.jdbc;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
 
 import java.io.IOException;
 
 /**
- * Integration test suite for Postgres.
+ * {@link AbstractSynchroTaskJdbcServiceIT} implementation for Oracle. During build, this test class is meant
+ * to be executed as part of {@link OracleTestDocker} suite.
  */
-@RunWith(Suite.class)
-@SuiteClasses({PostgresSQLRunnerIT.class, PostgresSynchroTaskJdbcServiceIT.class})
-public class PostgresTestDocker {
+public class OracleSynchroTaskJdbcServiceIT extends AbstractSynchroTaskJdbcServiceIT implements OracleDatabaseIT {
 
     @BeforeClass
     public static void init() throws IOException {
-        PostgresResource.init();
-    }
-
-    @AfterClass
-    public static void shutdown() {
-        PostgresResource.shutdown();
+        OracleResource.init();
     }
 }

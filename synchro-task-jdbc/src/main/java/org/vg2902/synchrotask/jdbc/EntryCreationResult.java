@@ -13,21 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.vg2902.synchrotask.jdbc.postgres;
+package org.vg2902.synchrotask.jdbc;
 
-import org.junit.BeforeClass;
-import org.vg2902.synchrotask.jdbc.AbstractSynchroTaskJdbcServiceIT;
-
-import java.io.IOException;
-
-/**
- * {@link AbstractSynchroTaskJdbcServiceIT} implementation for Postgres. During build, this test class is meant
- * to be executed as part of {@link PostgresTestDocker} suite.
- */
-public class PostgresSynchroTaskJdbcServiceIT extends AbstractSynchroTaskJdbcServiceIT implements PostgresDatabaseIT {
-
-    @BeforeClass
-    public static void init() throws IOException {
-        PostgresResource.init();
-    }
+enum EntryCreationResult {
+    CREATION_RESULT_OK,
+    CREATION_RESULT_ALREADY_EXISTS
 }

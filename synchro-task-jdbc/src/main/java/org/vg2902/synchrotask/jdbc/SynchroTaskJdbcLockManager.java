@@ -16,13 +16,9 @@
 package org.vg2902.synchrotask.jdbc;
 
 import lombok.extern.slf4j.Slf4j;
-import org.vg2902.synchrotask.core.api.SynchroTaskLockManager;
 import org.vg2902.synchrotask.core.api.SynchroTask;
+import org.vg2902.synchrotask.core.api.SynchroTaskLockManager;
 import org.vg2902.synchrotask.core.exception.SynchroTaskException;
-
-import java.sql.SQLException;
-
-import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
 
 /**
  * Implements lock/unlock functionality for a given {@link SynchroTask} using database as an underlying lock provider.
@@ -32,16 +28,10 @@ import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
 @Slf4j
 final class SynchroTaskJdbcLockManager implements SynchroTaskLockManager {
 
-    enum LockResult {
-        LOCK_RESULT_OK,
-        LOCK_RESULT_NOT_FOUND,
-        LOCK_RESULT_LOCKED_BY_ANOTHER_TASK
-    }
-
-    private final SQLRunner sqlRunner;
+    private final SQLRunner<?> sqlRunner;
     private final SynchroTask<?> task;
 
-    SynchroTaskJdbcLockManager(SQLRunner sqlRunner) {
+    SynchroTaskJdbcLockManager(SQLRunner<?> sqlRunner) {
         this.sqlRunner = sqlRunner;
         this.task = sqlRunner.getTask();
     }
@@ -65,8 +55,8 @@ final class SynchroTaskJdbcLockManager implements SynchroTaskLockManager {
 
         try {
             while (true) {
-                this.createLockEntry();
-                LockResult lockResult = this.acquireLock();
+                sqlRunner.createLockEntry();
+                EntryLockResult lockResult = sqlRunner.acquireLock();
 
                 switch (lockResult) {
                     case LOCK_RESULT_OK:
@@ -85,41 +75,6 @@ final class SynchroTaskJdbcLockManager implements SynchroTaskLockManager {
         }
     }
 
-    private void createLockEntry() throws SQLException {
-        log.debug("Creating a lock entry for {}", task);
-
-        try {
-            sqlRunner.insert();
-        } catch (SQLException e) {
-            if (sqlRunner.isDuplicateKey(e)) {
-                log.debug("Lock entry for {} already exists", task);
-                return;
-            }
-            throw e;
-        }
-
-        log.debug("Lock entry for {} is successfully created", task);
-    }
-
-    private LockResult acquireLock() throws SQLException {
-        log.debug("Acquiring lock for {}", task);
-
-        try {
-            boolean noWait = task.getCollisionStrategy() != WAIT;
-            boolean isLocked = sqlRunner.selectForUpdate(noWait);
-
-            if (!isLocked)
-                return LockResult.LOCK_RESULT_NOT_FOUND;
-        } catch (SQLException e) {
-            if (sqlRunner.isCannotAcquireLock(e)) {
-                return LockResult.LOCK_RESULT_LOCKED_BY_ANOTHER_TASK;
-            }
-            throw e;
-        }
-
-        return LockResult.LOCK_RESULT_OK;
-    }
-
     /**
      * Unlocks previously locked task by deleting the control row from the registry table
      * @throws SynchroTaskException in case of any exception
@@ -129,7 +84,7 @@ final class SynchroTaskJdbcLockManager implements SynchroTaskLockManager {
         log.debug("Releasing lock for {}", task);
 
         try {
-            sqlRunner.delete();
+            sqlRunner.removeLockEntry();
         } catch (Exception e) {
             throw new SynchroTaskException(e);
         }

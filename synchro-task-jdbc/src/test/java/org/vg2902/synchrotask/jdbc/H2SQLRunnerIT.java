@@ -13,30 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.vg2902.synchrotask.jdbc.oracle;
+package org.vg2902.synchrotask.jdbc;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 /**
- * Integration test suite for Oracle.
+ * {@link AbstractSQLRunnerIT} implementation for H2. During build, this test class is meant to be executed
+ * as part of {@link H2Test} suite.
  */
-@RunWith(Suite.class)
-@SuiteClasses({OracleSQLRunnerIT.class, OracleSynchroTaskJdbcServiceIT.class})
-public class OracleTestDocker {
+public class H2SQLRunnerIT extends AbstractSQLRunnerIT implements H2DatabaseIT {
 
     @BeforeClass
-    public static void init() throws IOException {
-        OracleResource.init();
-    }
-
-    @AfterClass
-    public static void shutdown() {
-        OracleResource.shutdown();
+    public static void init() throws IOException, SQLException {
+        H2Resource.init();
     }
 }

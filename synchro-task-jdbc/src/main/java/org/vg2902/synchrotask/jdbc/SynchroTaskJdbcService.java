@@ -96,7 +96,7 @@ import static java.util.Objects.requireNonNull;
  */
 @Getter
 @Slf4j
-public class SynchroTaskJdbcService implements SynchroTaskService {
+public final class SynchroTaskJdbcService implements SynchroTaskService {
 
     public static final String DEFAULT_TABLE = "SYNCHRO_TASK";
 
@@ -146,7 +146,7 @@ public class SynchroTaskJdbcService implements SynchroTaskService {
     public <T> T run(SynchroTask<T> task) {
         T result;
 
-        try (SQLRunner sqlRunner = new SQLRunner(dataSource, tableName, task);
+        try (SQLRunner<T> sqlRunner = SQLRunners.create(dataSource, tableName, task);
              SynchroTaskJdbcLockManager lockManager = new SynchroTaskJdbcLockManager(sqlRunner)) {
 
             if (interceptor != null)

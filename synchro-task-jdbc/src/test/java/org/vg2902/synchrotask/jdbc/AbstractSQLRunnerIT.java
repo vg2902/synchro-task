@@ -32,11 +32,14 @@ import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
+import static org.vg2902.synchrotask.jdbc.EntryCreationResult.CREATION_RESULT_ALREADY_EXISTS;
+import static org.vg2902.synchrotask.jdbc.EntryLockResult.LOCK_RESULT_LOCKED_BY_ANOTHER_TASK;
+import static org.vg2902.synchrotask.jdbc.EntryLockResult.LOCK_RESULT_NOT_FOUND;
+import static org.vg2902.synchrotask.jdbc.EntryLockResult.LOCK_RESULT_OK;
 
 /**
- * Tests for {@link SQLRunner} methods.
+ * Tests for {@link AbstractSQLRunner} methods.
  * These tests require real database instance to be up and running.
  */
 @Slf4j
@@ -56,9 +59,9 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
         LocalDateTime now = LocalDateTime.now();
         DataSource dataSource = getDataSource();
 
-        try (final SQLRunner sqlRunner = new SQLRunner(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
+        try (final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
 
-            sqlRunner.insert();
+            sqlRunner.createLockEntry();
             Table synchroTaskAfter = new Table(dataSource, TABLE_NAME);
 
             org.assertj.db.api.SoftAssertions dbAssertions = new org.assertj.db.api.SoftAssertions();
@@ -74,22 +77,22 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
     @Test
     public void selectsLockEntryForUpdateIfNotLocked() throws SQLException {
-        selectsLockEntryIfNotLocked(false);
+        selectsLockEntryIfNotLocked(CollisionStrategy.WAIT);
     }
 
     @Test
     public void selectsLockEntryForUpdateNoWaitIfNotLocked() throws SQLException {
-        selectsLockEntryIfNotLocked(true);
+        selectsLockEntryIfNotLocked(CollisionStrategy.THROW);
     }
 
-    public void selectsLockEntryIfNotLocked(boolean noWait) throws SQLException {
+    public void selectsLockEntryIfNotLocked(CollisionStrategy collisionStrategy) throws SQLException {
         DataSource dataSource = getDataSource();
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner sqlRunner1 = new SQLRunner(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"));
-             final SQLRunner sqlRunner2 = new SQLRunner(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName2", "TaskId2"));
-             final SQLRunner sqlRunner3 = new SQLRunner(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName3", "TaskId3"))) {
+             final SQLRunner<Void> sqlRunner1 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", collisionStrategy));
+             final SQLRunner<Void> sqlRunner2 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName2", "TaskId2", collisionStrategy));
+             final SQLRunner<Void> sqlRunner3 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName3", "TaskId3", collisionStrategy))) {
 
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
@@ -97,29 +100,33 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
 
             SoftAssertions assertions = new SoftAssertions();
-            assertions.assertThat(sqlRunner1.selectForUpdate(noWait)).isTrue();
-            assertions.assertThat(sqlRunner2.selectForUpdate(noWait)).isTrue();
-            assertions.assertThat(sqlRunner3.selectForUpdate(noWait)).isFalse();
+            assertions.assertThat(sqlRunner1.acquireLock()).isEqualTo(LOCK_RESULT_OK);
+            assertions.assertThat(sqlRunner2.acquireLock()).isEqualTo(LOCK_RESULT_OK);
+            assertions.assertThat(sqlRunner3.acquireLock()).isEqualTo(LOCK_RESULT_NOT_FOUND);
             assertions.assertAll();
+
+            sqlRunner1.getConnection().commit();
+            sqlRunner2.getConnection().commit();
+            sqlRunner3.getConnection().commit();
         }
     }
 
     @Test
     public void locksForUpdateIfNotLocked() throws SQLException {
-        locksIfNotLocked(false);
+        locksIfNotLocked(CollisionStrategy.WAIT);
     }
 
     @Test
     public void locksForUpdateNoWaitIfNotLocked() throws SQLException {
-        locksIfNotLocked(true);
+        locksIfNotLocked(CollisionStrategy.THROW);
     }
 
-    public void locksIfNotLocked(boolean noWait) throws SQLException {
+    public void locksIfNotLocked(CollisionStrategy collisionStrategy) throws SQLException {
         DataSource dataSource = getDataSource();
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner sqlRunner = new SQLRunner(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", collisionStrategy))) {
 
             Long synchroTaskSessionId = getSessionId(sqlRunner.getConnection());
             Long testSessionId = getSessionId(connection);
@@ -128,13 +135,13 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
             connection.commit();
 
-            boolean isFound = sqlRunner.selectForUpdate(noWait);
+            EntryLockResult result = sqlRunner.acquireLock();
 
             new Thread(() -> lockInNewSession(connection, "TaskName1", "TaskId1")).start();
             await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(() -> isDatabaseSessionBlocked(testSessionId, synchroTaskSessionId));
             sqlRunner.getConnection().commit();
 
-            assertThat(isFound).isTrue();
+            assertThat(result).isEqualTo(LOCK_RESULT_OK);
         }
     }
 
@@ -154,7 +161,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner sqlRunner = new SQLRunner(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
 
             Long synchroTaskSessionId = getSessionId(sqlRunner.getConnection());
             Long testSessionId = getSessionId(connection);
@@ -166,7 +173,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
             new Thread(() -> {
                 try {
-                    sqlRunner.selectForUpdate(false);
+                    sqlRunner.acquireLock();
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
@@ -174,8 +181,9 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
             await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(() -> isDatabaseSessionBlocked(synchroTaskSessionId, testSessionId));
             connection.commit();
 
-            boolean isFound = sqlRunner.selectForUpdate(false);
-            assertThat(isFound).isTrue();
+            EntryLockResult result = sqlRunner.acquireLock();
+            assertThat(result).isEqualTo(LOCK_RESULT_OK);
+            sqlRunner.getConnection().commit();
         }
     }
 
@@ -185,7 +193,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner sqlRunner = new SQLRunner(dataSource, TABLE_NAME, getThrowingTestSynchroTask("TaskName1", "TaskId1"))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getThrowingTestSynchroTask("TaskName1", "TaskId1"))) {
 
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
@@ -193,7 +201,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
             statement.executeQuery("SELECT * FROM " + TABLE_NAME + " WHERE task_name = 'TaskName1' AND task_id = 'TaskId1' FOR UPDATE");
 
 
-            assertThatThrownBy(() -> sqlRunner.selectForUpdate(true)).matches(e -> getSQLSupport().isCannotAcquireLock(((SQLException) e)));
+            assertThat(sqlRunner.acquireLock()).isEqualTo(LOCK_RESULT_LOCKED_BY_ANOTHER_TASK);
         }
     }
 
@@ -203,14 +211,14 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner sqlRunner = new SQLRunner(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
 
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:00')");
             connection.commit();
-            boolean deleted = sqlRunner.delete();
+            EntryRemovalResult result = sqlRunner.removeLockEntry();
 
 
-            org.assertj.core.api.Assertions.assertThat(deleted).isTrue();
+            org.assertj.core.api.Assertions.assertThat(result).isEqualTo(EntryRemovalResult.REMOVAL_RESULT_OK);
 
             Table synchroTaskAfter = new Table(dataSource, TABLE_NAME);
             org.assertj.db.api.Assertions.assertThat(synchroTaskAfter).hasNumberOfRows(0);
@@ -223,13 +231,13 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner sqlRunner = new SQLRunner(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
 
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:00')");
             connection.commit();
 
 
-            assertThatThrownBy(sqlRunner::insert).matches(e -> getSQLSupport().isDuplicateKey((SQLException) e));
+            assertThat(sqlRunner.createLockEntry()).isEqualTo(CREATION_RESULT_ALREADY_EXISTS);
         }
     }
 

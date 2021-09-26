@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.vg2902.synchrotask.jdbc.postgres;
+package org.vg2902.synchrotask.jdbc;
 
-import org.junit.BeforeClass;
-import org.vg2902.synchrotask.jdbc.AbstractSQLRunnerIT;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import java.io.IOException;
+@Getter
+@RequiredArgsConstructor
+enum ConnectionProperty {
+    AUTO_COMMIT("autoCommit"),
+    TRANSACTION_ISOLATION("transactionIsolation"),
+    LOCK_TIMEOUT("lockTimeout");
 
-/**
- * {@link AbstractSQLRunnerIT} implementation for Postgres. During build, this test class is meant to be executed
- * as part of {@link PostgresTestDocker} suite.
- */
-public class PostgresSQLRunnerIT extends AbstractSQLRunnerIT implements PostgresDatabaseIT {
-
-    @BeforeClass
-    public static void init() throws IOException {
-        PostgresResource.init();
-    }
+    private final String displayName;
 }
+

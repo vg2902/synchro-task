@@ -13,16 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.vg2902.synchrotask.jdbc.h2;
+package org.vg2902.synchrotask.jdbc;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
-
-/**
- * Integration test suite for H2.
- */
-@RunWith(Suite.class)
-@SuiteClasses({H2SQLRunnerIT.class, H2SynchroTaskJdbcServiceIT.class})
-public class H2Test {
+enum EntryRemovalResult {
+    REMOVAL_RESULT_OK,
+    REMOVAL_RESULT_NOT_FOUND
 }

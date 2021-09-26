@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.vg2902.synchrotask.jdbc.postgres;
-
-import org.vg2902.synchrotask.jdbc.DatabaseIT;
-import org.vg2902.synchrotask.jdbc.SynchroTaskSQLSupport;
+package org.vg2902.synchrotask.jdbc;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -25,21 +22,21 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 /**
- * Postgres-specific version of {@link DatabaseIT}.
+ * Oracle-specific version of {@link DatabaseIT}.
  */
-public interface PostgresDatabaseIT extends DatabaseIT {
+public interface OracleDatabaseIT extends DatabaseIT {
 
     @Override
     default DataSource getDataSource() {
-        return PostgresResource.datasource;
+        return OracleResource.datasource;
     }
 
     @Override
     default Long getSessionId(Connection connection) {
         try (Statement statement = connection.createStatement()) {
-            ResultSet rs = statement.executeQuery("SELECT pg_backend_pid()");
+            ResultSet rs = statement.executeQuery("SELECT SYS_CONTEXT('userenv','sid') sid FROM dual");
             rs.next();
-            return (long) rs.getInt(1);
+            return rs.getLong(1);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -50,25 +47,15 @@ public interface PostgresDatabaseIT extends DatabaseIT {
         DataSource dataSource = getDataSource();
 
         try (final Connection connection = dataSource.getConnection();
-             final PreparedStatement statement = connection.prepareStatement("SELECT * FROM unnest(pg_blocking_pids(?))")) {
+             final PreparedStatement statement = connection.prepareStatement("SELECT * FROM v$session WHERE sid = ? AND blocking_session = ?")) {
 
-            statement.setInt(1, blockedSessionId.intValue());
+            statement.setLong(1, blockedSessionId);
+            statement.setLong(2, blockingSessionId);
 
             ResultSet rs = statement.executeQuery();
-
-            while (rs.next()) {
-                if (rs.getInt(1) == blockingSessionId)
-                    return true;
-            }
-
-            return false;
+            return rs.next();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    default SynchroTaskSQLSupport getSQLSupport() {
-        return SynchroTaskSQLSupport.POSTGRES_SUPPORT;
     }
 }
