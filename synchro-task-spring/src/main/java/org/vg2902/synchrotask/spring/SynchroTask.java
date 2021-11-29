@@ -24,6 +24,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
+import static org.vg2902.synchrotask.core.api.LockTimeout.SYSTEM_DEFAULT_TIMEOUT;
 
 /**
  * Enables <b>SynchroTask</b> semantics for the annotated method.
@@ -31,8 +32,8 @@ import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
  * The framework will wrap the method invocations in individual {@link org.vg2902.synchrotask.core.api.SynchroTask}
  * instances and execute them with an eligible {@link SynchroTaskService} bean.
  * <p>
- * The annotated method must have two arguments with {@link TaskName} and {@link TaskId} annotations respectively to designate the
- * parameters that should be used as the <b>taskName</b> and <b>taskId</b>:
+ * The annotated method must have two arguments with {@link TaskName} and {@link TaskId} annotations respectively
+ * to designate the parameters that should be used as the <b>taskName</b> and <b>taskId</b>:
  * <pre>
  * &#64;Component
  * public class SynchroTaskRunner {
@@ -66,6 +67,24 @@ public @interface SynchroTask {
      * {@link CollisionStrategy} parameter of the tasks created from the annotated method
      *
      * @return {@link CollisionStrategy} value
+     * @deprecated This class is a part of deprecated API and will be removed in the following releases.
+     * Use {@link #lockTimeout()} parameter instead to control {@link SynchroTask} behaviour.
+     * This value will be ignored if non-default {@link #lockTimeout()} is provided.
      */
     CollisionStrategy onLock() default WAIT;
+
+    /**
+     * @return Lock timeout in milliseconds
+     * @see org.vg2902.synchrotask.core.api.LockTimeout
+     */
+    long lockTimeout() default SYSTEM_DEFAULT_TIMEOUT;
+
+    /**
+     * @return indicates whether the annotated method should throw an {@link org.vg2902.synchrotask.core.exception.SynchroTaskCollisionException}
+     * if execution is locked by another {@link org.vg2902.synchrotask.core.api.SynchroTask} instance
+     * and the {@link #lockTimeout()} is expired.
+     * <p>
+     * When set to <b>false</b>, the locked method will return immediately with return value of null for non-void methods.
+     */
+    boolean throwExceptionAfterTimeout() default true;
 }

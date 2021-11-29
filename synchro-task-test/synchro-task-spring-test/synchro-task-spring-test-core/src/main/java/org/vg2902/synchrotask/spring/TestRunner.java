@@ -16,6 +16,7 @@
 package org.vg2902.synchrotask.spring;
 
 import lombok.RequiredArgsConstructor;
+import org.vg2902.synchrotask.core.api.LockTimeout;
 
 import static org.vg2902.synchrotask.core.api.CollisionStrategy.RETURN;
 import static org.vg2902.synchrotask.core.api.CollisionStrategy.THROW;
@@ -57,6 +58,31 @@ public class TestRunner {
     @SynchroTask(serviceName = "service2")
     public String taskWithService2(@TaskName String taskName, @TaskId int taskId) {
         return formatOutput("defaultTaskWithService2", taskName, String.valueOf(taskId));
+    }
+
+    @SynchroTask(lockTimeout = 0)
+    public String noLockTimeoutTask(@TaskName String taskName, @TaskId int taskId) {
+        return formatOutput("noLockTimeoutTask", taskName, String.valueOf(taskId));
+    }
+
+    @SynchroTask(lockTimeout = LockTimeout.SYSTEM_DEFAULT_TIMEOUT)
+    public String defaultLockTimeoutTask(@TaskName String taskName, @TaskId int taskId) {
+        return formatOutput("defaultLockTimeoutTask", taskName, String.valueOf(taskId));
+    }
+
+    @SynchroTask(lockTimeout = LockTimeout.MAX_SUPPORTED_TIMEOUT)
+    public String maxSupportedLockTimeoutTask(@TaskName String taskName, @TaskId int taskId) {
+        return formatOutput("maxSupportedLockTimeoutTask", taskName, String.valueOf(taskId));
+    }
+
+    @SynchroTask(lockTimeout = LockTimeout.MAX_SUPPORTED_TIMEOUT, throwExceptionAfterTimeout = false)
+    public String returningTimeoutTask(@TaskName String taskName, @TaskId int taskId) {
+        return formatOutput("returningTimeoutTask", taskName, String.valueOf(taskId));
+    }
+
+    @SynchroTask(lockTimeout = 20000)
+    public String customLockTimeoutTask(@TaskName String taskName, @TaskId int taskId) {
+        return formatOutput("customLockTimeoutTask", taskName, String.valueOf(taskId));
     }
 
     private String formatOutput(String taskType, String taskName, String taskId) {

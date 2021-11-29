@@ -17,12 +17,14 @@ package org.vg2902.synchrotask.jdbc;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.vg2902.synchrotask.core.api.LockTimeout;
 import org.vg2902.synchrotask.core.api.SynchroTask;
 
 import javax.sql.DataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -30,7 +32,7 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toSet;
-import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
+import static org.vg2902.synchrotask.core.api.LockTimeout.SYSTEM_DEFAULT;
 import static org.vg2902.synchrotask.jdbc.EntryCreationResult.CREATION_RESULT_ALREADY_EXISTS;
 import static org.vg2902.synchrotask.jdbc.EntryCreationResult.CREATION_RESULT_OK;
 import static org.vg2902.synchrotask.jdbc.EntryLockResult.LOCK_RESULT_LOCKED_BY_ANOTHER_TASK;
@@ -46,6 +48,8 @@ import static org.vg2902.synchrotask.jdbc.EntryRemovalResult.REMOVAL_RESULT_OK;
  *     <li>duplicate key error code is <b>1062</b>;</li>
  *     <li>lock acquire error codes are <b>1205, 3572</b>;</li>
  *     <li>SQL exception vendor codes are retrieved using {@link SQLException#getErrorCode()}</li>
+ *     <li><b>SELECT FOR UPDATE</b> does not support <b>WAIT</b> clause.
+ *     Instead, the implementation adjusts <b>innodb_lock_wait_timeout</b> {@link java.sql.Connection} parameter.</li>
  * </ul>
  *
  * @see SynchroTask
@@ -55,6 +59,8 @@ import static org.vg2902.synchrotask.jdbc.EntryRemovalResult.REMOVAL_RESULT_OK;
 @Slf4j
 final class MySQLRunner<T> extends AbstractSQLRunner<T> {
 
+    private static final long MYSQL_MAX_LOCK_TIMEOUT_IN_SECONDS = 1073741824L;
+
     private static final Set<Integer> duplicateKeyErrorCodes = singleton(1062);
     private static final Set<Integer> cannotAcquireLockErrorCodes = Stream.of(1205, 3572).collect(toSet());
 
@@ -62,6 +68,8 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
     private final String selectForUpdateQuery;
     private final String selectForUpdateNoWaitQuery;
     private final String deleteQuery;
+    private final String getLockTimeoutQuery;
+    private final String updateLockTimeoutQuery;
 
     MySQLRunner(DataSource datasource, String tableName, SynchroTask<T> task) throws SQLException {
         super(datasource, tableName, task);
@@ -70,10 +78,13 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
         selectForUpdateQuery = "SELECT task_name, task_id FROM " + tableName + " WHERE task_name = ? AND task_id = ? FOR UPDATE";
         selectForUpdateNoWaitQuery = selectForUpdateQuery + " NOWAIT";
         deleteQuery = "DELETE FROM " + tableName + " WHERE task_name = ? AND task_id = ?";
+        getLockTimeoutQuery = "SELECT @@SESSION.innodb_lock_wait_timeout";
+        updateLockTimeoutQuery = "SET @@SESSION.innodb_lock_wait_timeout = ?";
     }
 
     @Override
     public EntryCreationResult createLockEntry() throws SQLException {
+        super.checkNotClosed();
         log.debug("Creating a lock entry for {}", task);
 
         try {
@@ -104,8 +115,6 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
     }
 
     private void insert() throws SQLException {
-        super.checkNotClosed();
-
         log.debug(insertQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(insertQuery)) {
@@ -126,10 +135,18 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
 
     @Override
     public EntryLockResult acquireLock() throws SQLException {
+        super.checkNotClosed();
         log.debug("Acquiring lock for {}", task);
 
+        LockTimeout lockTimeout = getTask().getLockTimeout();
+        boolean isLockTimeoutAdjustmentRequired = lockTimeout != SYSTEM_DEFAULT;
+
+        int currentLockTimeoutInSeconds = 0;
+        if (isLockTimeoutAdjustmentRequired)
+            currentLockTimeoutInSeconds = adjustLockTimeout();
+
         try {
-            boolean noWait = task.getCollisionStrategy() != WAIT;
+            boolean noWait = lockTimeout.getValueInMillis() == 0;
             boolean isLocked = selectForUpdate(noWait);
 
             if (!isLocked)
@@ -140,14 +157,33 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
             } else {
                 throw e;
             }
+        } finally {
+            if (isLockTimeoutAdjustmentRequired)
+                updateLockTimeout(currentLockTimeoutInSeconds);
         }
 
         return LOCK_RESULT_OK;
     }
 
-    private boolean selectForUpdate(boolean noWait) throws SQLException {
-        super.checkNotClosed();
+    private int adjustLockTimeout() throws SQLException {
+        int currentLockTimeoutInSeconds = getLockTimeoutInSeconds();
+        log.debug("Current lock timeout: {}s", currentLockTimeoutInSeconds);
 
+        LockTimeout lockTimeout = getTask().getLockTimeout();
+        long lockTimeoutInSecondsOverride = lockTimeout.getValueInMillis() / 1000L;
+
+        if (lockTimeoutInSecondsOverride > MYSQL_MAX_LOCK_TIMEOUT_IN_SECONDS)
+            log.warn("Provided lock timeout " + lockTimeoutInSecondsOverride + " exceeds MySQL max supported value and will be adjusted to " + MYSQL_MAX_LOCK_TIMEOUT_IN_SECONDS);
+
+        if (lockTimeout == LockTimeout.MAX_SUPPORTED || lockTimeoutInSecondsOverride > MYSQL_MAX_LOCK_TIMEOUT_IN_SECONDS)
+            lockTimeoutInSecondsOverride = MYSQL_MAX_LOCK_TIMEOUT_IN_SECONDS;
+
+        updateLockTimeout((int) lockTimeoutInSecondsOverride);
+
+        return currentLockTimeoutInSeconds;
+    }
+
+    private boolean selectForUpdate(boolean noWait) throws SQLException {
         String sql = noWait ? selectForUpdateNoWaitQuery : selectForUpdateQuery;
         log.debug(sql);
 
@@ -161,6 +197,26 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
         }
     }
 
+    private int getLockTimeoutInSeconds() throws SQLException {
+        log.debug(getLockTimeoutQuery);
+
+        try (Statement currentTimeout = super.connection.createStatement()) {
+            ResultSet rs = currentTimeout.executeQuery(getLockTimeoutQuery);
+            rs.next();
+            return rs.getInt(1);
+        }
+    }
+
+    private void updateLockTimeout(int lockTimeoutInSeconds) throws SQLException {
+        log.debug("Updating lock timeout to: {}", lockTimeoutInSeconds);
+        log.debug(updateLockTimeoutQuery);
+
+        try (PreparedStatement updateTimeout = super.connection.prepareStatement(updateLockTimeoutQuery)) {
+            updateTimeout.setInt(1, lockTimeoutInSeconds);
+            updateTimeout.executeUpdate();
+        }
+    }
+
     @Override
     public boolean isCannotAcquireLock(SQLException e) {
         return isExceptionErrorCodeIn(e, cannotAcquireLockErrorCodes);
@@ -168,6 +224,8 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
 
     @Override
     public EntryRemovalResult removeLockEntry() throws SQLException {
+        super.checkNotClosed();
+
         if (delete())
             return REMOVAL_RESULT_OK;
         else
@@ -175,8 +233,6 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
     }
 
     private boolean delete() throws SQLException {
-        super.checkNotClosed();
-
         log.debug(deleteQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(deleteQuery)) {

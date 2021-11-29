@@ -17,6 +17,7 @@ package org.vg2902.synchrotask.jdbc;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.vg2902.synchrotask.core.api.LockTimeout;
 import org.vg2902.synchrotask.core.api.SynchroTask;
 
 import javax.sql.DataSource;
@@ -26,9 +27,12 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static java.util.Collections.singleton;
-import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
+import static java.util.stream.Collectors.toSet;
+import static org.vg2902.synchrotask.core.api.LockTimeout.MAX_SUPPORTED;
+import static org.vg2902.synchrotask.core.api.LockTimeout.SYSTEM_DEFAULT;
 import static org.vg2902.synchrotask.jdbc.EntryCreationResult.CREATION_RESULT_ALREADY_EXISTS;
 import static org.vg2902.synchrotask.jdbc.EntryCreationResult.CREATION_RESULT_OK;
 import static org.vg2902.synchrotask.jdbc.EntryLockResult.LOCK_RESULT_LOCKED_BY_ANOTHER_TASK;
@@ -53,8 +57,10 @@ import static org.vg2902.synchrotask.jdbc.EntryRemovalResult.REMOVAL_RESULT_OK;
 @Slf4j
 final class OracleSQLRunner<T> extends AbstractSQLRunner<T> {
 
+    private static final long ORACLE_MAX_LOCK_TIMEOUT_IN_SECONDS = 4294967295L;
+
     private static final Set<Integer> duplicateKeyErrorCodes = singleton(1);
-    private static final Set<Integer> cannotAcquireLockErrorCodes = singleton(54);
+    private static final Set<Integer> cannotAcquireLockErrorCodes = Stream.of(54, 30006).collect(toSet());
 
     private final String insertQuery;
     private final String selectForUpdateQuery;
@@ -72,6 +78,7 @@ final class OracleSQLRunner<T> extends AbstractSQLRunner<T> {
 
     @Override
     public EntryCreationResult createLockEntry() throws SQLException {
+        super.checkNotClosed();
         log.debug("Creating a lock entry for {}", task);
 
         try {
@@ -90,8 +97,6 @@ final class OracleSQLRunner<T> extends AbstractSQLRunner<T> {
     }
 
     private void insert() throws SQLException {
-        super.checkNotClosed();
-
         log.debug(insertQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(insertQuery)) {
@@ -112,11 +117,11 @@ final class OracleSQLRunner<T> extends AbstractSQLRunner<T> {
 
     @Override
     public EntryLockResult acquireLock() throws SQLException {
+        super.checkNotClosed();
         log.debug("Acquiring lock for {}", task);
 
         try {
-            boolean noWait = task.getCollisionStrategy() != WAIT;
-            boolean isLocked = selectForUpdate(noWait);
+            boolean isLocked = selectForUpdate();
 
             if (!isLocked)
                 return LOCK_RESULT_NOT_FOUND;
@@ -131,15 +136,30 @@ final class OracleSQLRunner<T> extends AbstractSQLRunner<T> {
         return LOCK_RESULT_OK;
     }
 
-    private boolean selectForUpdate(boolean noWait) throws SQLException {
-        super.checkNotClosed();
+    private boolean selectForUpdate() throws SQLException {
+        LockTimeout lockTimeout = getTask().getLockTimeout();
+        String selectForUpdate;
 
-        String sql = noWait ? selectForUpdateNoWaitQuery : selectForUpdateQuery;
-        log.debug(sql);
+        if (lockTimeout == MAX_SUPPORTED || lockTimeout == SYSTEM_DEFAULT) {
+            selectForUpdate = selectForUpdateQuery;
+        } else if (lockTimeout.getValueInMillis() == 0) {
+            selectForUpdate = selectForUpdateNoWaitQuery;
+        } else {
+            long lockTimeoutInSeconds = lockTimeout.getValueInMillis() / 1000L;
 
-        try (PreparedStatement stmt = super.connection.prepareStatement(sql)) {
-            stmt.setString(1, String.valueOf(task.getTaskName()));
-            stmt.setString(2, String.valueOf(task.getTaskId()));
+            if (lockTimeoutInSeconds > ORACLE_MAX_LOCK_TIMEOUT_IN_SECONDS) {
+                log.warn("Provided lock timeout " + lockTimeoutInSeconds + " exceeds Oracle max supported explicit value and will be adjusted to " + ORACLE_MAX_LOCK_TIMEOUT_IN_SECONDS);
+                lockTimeoutInSeconds = ORACLE_MAX_LOCK_TIMEOUT_IN_SECONDS;
+            }
+
+            selectForUpdate = selectForUpdateQuery + " WAIT " + lockTimeoutInSeconds;
+        }
+
+        log.debug(selectForUpdate);
+
+        try (PreparedStatement stmt = super.connection.prepareStatement(selectForUpdate)) {
+            stmt.setString(1, String.valueOf(super.task.getTaskName()));
+            stmt.setString(2, String.valueOf(super.task.getTaskId()));
 
             ResultSet resultSet = stmt.executeQuery();
 
@@ -154,6 +174,8 @@ final class OracleSQLRunner<T> extends AbstractSQLRunner<T> {
 
     @Override
     public EntryRemovalResult removeLockEntry() throws SQLException {
+        super.checkNotClosed();
+
         if (delete())
             return REMOVAL_RESULT_OK;
         else
@@ -161,8 +183,6 @@ final class OracleSQLRunner<T> extends AbstractSQLRunner<T> {
     }
 
     private boolean delete() throws SQLException {
-        super.checkNotClosed();
-
         log.debug(deleteQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(deleteQuery)) {

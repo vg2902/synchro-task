@@ -15,9 +15,9 @@
  */
 package org.vg2902.synchrotask.integration;
 
+import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.Test;
-import org.vg2902.synchrotask.core.api.CollisionStrategy;
 import org.vg2902.synchrotask.core.api.SynchroTask;
 import org.vg2902.synchrotask.core.api.SynchroTaskService;
 import org.vg2902.synchrotask.core.exception.SynchroTaskCollisionException;
@@ -38,6 +38,7 @@ import static org.awaitility.Awaitility.with;
 /**
  * Platform-agnostic integration test suite
  */
+@Slf4j
 public abstract class AbstractSynchroTaskServiceIT {
 
     private static final long WAITING_SECONDS = 5;
@@ -49,40 +50,38 @@ public abstract class AbstractSynchroTaskServiceIT {
     public abstract boolean isBlocking(SynchroTask<?> blockedTask, SynchroTask<?> blockingTask) throws SQLException;
 
     @Test
-    public void throwingTaskCompletes() {
+    public void completes() {
         SynchroTaskService service = getSynchroTaskService();
 
         SynchroTask<Integer> synchroTask = SynchroTask
-                .from(() -> 1)
-                .withName("Throwing")
-                .withId("1")
-                .onLock(CollisionStrategy.THROW)
+                .from(() -> 42)
+                .withName("foo")
+                .withId("bar")
                 .build();
 
-        assertThat(service.run(synchroTask)).isEqualTo(1);
+        assertThat(service.run(synchroTask)).isEqualTo(42);
     }
 
     @Test
-    public void throwingTaskThrowsCollisionExceptionIfSameTaskIsRunning() {
+    public void throwsCollisionExceptionIfSameTaskIsRunning() {
         SynchroTaskService service = getSynchroTaskService();
 
         WaitingSupplier<Integer> waitingSupplier = new WaitingSupplier<>(1);
 
         SynchroTask<Integer> synchroTask1 = SynchroTask
                 .from(waitingSupplier)
-                .withName("Throwing")
-                .withId("1")
-                .onLock(CollisionStrategy.THROW)
+                .withName("foo")
+                .withId("bar")
                 .build();
 
         executor.submit(() -> service.run(synchroTask1));
         await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isAwaiting);
 
         SynchroTask<Integer> synchroTask2 = SynchroTask
-                .from(() -> 2)
-                .withName("Throwing")
-                .withId("1")
-                .onLock(CollisionStrategy.THROW)
+                .from(() -> 42)
+                .withName("foo")
+                .withId("bar")
+                .withLockTimeout(0)
                 .build();
 
 
@@ -92,36 +91,37 @@ public abstract class AbstractSynchroTaskServiceIT {
         waitingSupplier.proceed();
         await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isTerminated);
 
-        assertions.assertThat(service.run(synchroTask2)).isEqualTo(2);
+        assertions.assertThat(service.run(synchroTask2)).isEqualTo(42);
         assertions.assertAll();
     }
 
     @Test
-    public void throwingTaskCompletesIfNoSameTaskIsRunning() {
+    public void returnsNullIfSameTaskIsRunning() {
         SynchroTaskService service = getSynchroTaskService();
 
         WaitingSupplier<Integer> waitingSupplier = new WaitingSupplier<>(1);
 
         SynchroTask<Integer> synchroTask1 = SynchroTask
                 .from(waitingSupplier)
-                .withName("Throwing")
-                .withId("1")
-                .onLock(CollisionStrategy.THROW)
+                .withName("foo")
+                .withId("bar")
                 .build();
 
         executor.submit(() -> service.run(synchroTask1));
         await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isAwaiting);
 
         SynchroTask<Integer> synchroTask2 = SynchroTask
-                .from(() -> 2)
-                .withName("Throwing")
-                .withId("2")
-                .onLock(CollisionStrategy.THROW)
+                .from(() -> 42)
+                .withName("foo")
+                .withId("bar")
+                .withLockTimeout(0)
+                .throwExceptionAfterTimeout(false)
                 .build();
 
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(service.run(synchroTask2)).isEqualTo(2);
+        assertions.assertThat(service.run(synchroTask2)).isNull();
+        assertions.assertThat(waitingSupplier.isAwaiting()).isTrue();
 
         waitingSupplier.proceed();
         await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isTerminated);
@@ -129,30 +129,46 @@ public abstract class AbstractSynchroTaskServiceIT {
     }
 
     @Test
-    public void waitingTaskCompletes() {
+    public void completesIfNoSameTaskIsRunning() {
         SynchroTaskService service = getSynchroTaskService();
 
-        SynchroTask<Integer> synchroTask = SynchroTask
-                .from(() -> 1)
-                .withName("Waiting")
-                .withId("1")
-                .onLock(CollisionStrategy.WAIT)
+        WaitingSupplier<Integer> waitingSupplier = new WaitingSupplier<>(1);
+
+        SynchroTask<Integer> synchroTask1 = SynchroTask
+                .from(waitingSupplier)
+                .withName("foo")
+                .withId("bar")
                 .build();
 
-        assertThat(service.run(synchroTask)).isEqualTo(1);
+        executor.submit(() -> service.run(synchroTask1));
+        await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isAwaiting);
+
+        SynchroTask<Integer> synchroTask2 = SynchroTask
+                .from(() -> 42)
+                .withName("foo")
+                .withId("baz")
+                .withLockTimeout(0)
+                .build();
+
+
+        SoftAssertions assertions = new SoftAssertions();
+        assertions.assertThat(service.run(synchroTask2)).isEqualTo(42);
+
+        waitingSupplier.proceed();
+        await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isTerminated);
+        assertions.assertAll();
     }
 
     @Test
-    public void waitingTaskWaitsIfSameTaskIsRunning() throws ExecutionException, InterruptedException {
+    public void waitsIndefinitelyIfSameTaskIsRunning() throws ExecutionException, InterruptedException {
         SynchroTaskService service = getSynchroTaskService();
 
         WaitingSupplier<Integer> waitingSupplier1 = new WaitingSupplier<>(1);
 
         SynchroTask<Integer> synchroTask1 = SynchroTask
                 .from(waitingSupplier1)
-                .withName("Waiting")
-                .withId("1")
-                .onLock(CollisionStrategy.WAIT)
+                .withName("foo")
+                .withId("bar")
                 .build();
 
         Future<Integer> future1 = executor.submit(() -> service.run(synchroTask1));
@@ -163,9 +179,9 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask2 = SynchroTask
                 .from(waitingSupplier2)
-                .withName("Waiting")
-                .withId("1")
-                .onLock(CollisionStrategy.WAIT)
+                .withName("foo")
+                .withId("bar")
+                .withMaxSupportedLockTimeout()
                 .build();
 
         Future<Integer> future2 = executor.submit(() -> service.run(synchroTask2));
@@ -190,114 +206,54 @@ public abstract class AbstractSynchroTaskServiceIT {
     }
 
     @Test
-    public void waitingTaskCompletesIfNoSameTaskIsRunning() {
+    public void waitsSpecifiedTimeIfSameTaskIsRunning() throws ExecutionException, InterruptedException {
         SynchroTaskService service = getSynchroTaskService();
 
-        WaitingSupplier<Integer> waitingSupplier = new WaitingSupplier<>(1);
+        WaitingSupplier<Integer> waitingSupplier1 = new WaitingSupplier<>(1);
 
         SynchroTask<Integer> synchroTask1 = SynchroTask
-                .from(waitingSupplier)
-                .withName("Waiting")
-                .withId("1")
-                .onLock(CollisionStrategy.WAIT)
+                .from(waitingSupplier1)
+                .withName("foo")
+                .withId("bar")
                 .build();
 
-        executor.submit(() -> service.run(synchroTask1));
-        await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isAwaiting);
+        Future<Integer> future1 = executor.submit(() -> service.run(synchroTask1));
+        await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier1::isAwaiting);
+
+
+        WaitingSupplier<Integer> waitingSupplier2 = new WaitingSupplier<>(2);
 
         SynchroTask<Integer> synchroTask2 = SynchroTask
-                .from(() -> 2)
-                .withName("Waiting")
-                .withId("2")
-                .onLock(CollisionStrategy.WAIT)
+                .from(waitingSupplier2)
+                .withName("foo")
+                .withId("bar")
+                .withLockTimeout(3000L)
                 .build();
+
+        Future<Integer> future2 = executor.submit(() -> service.run(synchroTask2));
+
+        with().pollInterval(200, TimeUnit.MILLISECONDS)
+                .await()
+                .atMost(WAITING_SECONDS, TimeUnit.SECONDS)
+                .until(() -> isBlocking(synchroTask2, synchroTask1));
+
+        with().pollInterval(1000, TimeUnit.MILLISECONDS)
+                .await()
+                .atLeast(3, TimeUnit.SECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .until(() -> !isBlocking(synchroTask2, synchroTask1));
 
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(service.run(synchroTask2)).isEqualTo(2);
 
-        waitingSupplier.proceed();
-        await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isTerminated);
-        assertions.assertAll();
-    }
+        assertions.assertThatThrownBy(future2::get)
+                .isInstanceOf(ExecutionException.class)
+                .hasCauseExactlyInstanceOf(SynchroTaskCollisionException.class);
 
-    @Test
-    public void returningTaskCompletes() {
-        SynchroTaskService service = getSynchroTaskService();
+        waitingSupplier1.proceed();
+        await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier1::isTerminated);
 
-        SynchroTask<Integer> synchroTask = SynchroTask
-                .from(() -> 1)
-                .withName("Returning")
-                .withId("1")
-                .onLock(CollisionStrategy.RETURN)
-                .build();
-
-        assertThat(service.run(synchroTask)).isEqualTo(1);
-    }
-
-    @Test
-    public void returningTaskReturnsNullIfSameTaskIsRunning() {
-        SynchroTaskService service = getSynchroTaskService();
-
-        WaitingSupplier<Integer> waitingSupplier = new WaitingSupplier<>(1);
-
-        SynchroTask<Integer> synchroTask1 = SynchroTask
-                .from(waitingSupplier)
-                .withName("Returning")
-                .withId("1")
-                .onLock(CollisionStrategy.RETURN)
-                .build();
-
-        executor.submit(() -> service.run(synchroTask1));
-        await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isAwaiting);
-
-        SynchroTask<Integer> synchroTask2 = SynchroTask
-                .from(() -> 2)
-                .withName("Returning")
-                .withId("1")
-                .onLock(CollisionStrategy.RETURN)
-                .build();
-
-
-        SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(service.run(synchroTask2)).isNull();
-
-        waitingSupplier.proceed();
-        await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isTerminated);
-
-        assertions.assertThat(service.run(synchroTask2)).isEqualTo(2);
-        assertions.assertAll();
-    }
-
-    @Test
-    public void returningTaskCompletesIfNoSameTaskIsRunning() {
-        SynchroTaskService service = getSynchroTaskService();
-
-        WaitingSupplier<Integer> waitingSupplier = new WaitingSupplier<>(1);
-
-        SynchroTask<Integer> synchroTask1 = SynchroTask
-                .from(waitingSupplier)
-                .withName("Returning")
-                .withId("1")
-                .onLock(CollisionStrategy.RETURN)
-                .build();
-
-        executor.submit(() -> service.run(synchroTask1));
-        await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isAwaiting);
-
-        SynchroTask<Integer> synchroTask2 = SynchroTask
-                .from(() -> 2)
-                .withName("Returning")
-                .withId("2")
-                .onLock(CollisionStrategy.RETURN)
-                .build();
-
-
-        SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(service.run(synchroTask2)).isEqualTo(2);
-
-        waitingSupplier.proceed();
-        await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(waitingSupplier::isTerminated);
+        assertions.assertThat(future1.get()).isEqualTo(1);
         assertions.assertAll();
     }
 
@@ -331,5 +287,4 @@ public abstract class AbstractSynchroTaskServiceIT {
             return this.phaser.isTerminated();
         }
     }
-
 }

@@ -2,23 +2,23 @@
 
 Instance1 -> LockProvider ++ #FFBBBB : lock [foo, bar]
 activate Instance1
-LockProvider --> Instance1 : OK
+LockProvider --> Instance1 : LOCK ACQUIRED
 Instance1 -> Instance1 ++: run <<SynchroTask[foo, bar]>>
 
-Instance2 ->x LockProvider: lock [foo, bar]
+Instance2 ->x LockProvider: lock [foo, bar, lockTimeout=N ms]
 activate Instance2
-LockProvider --> Instance2 : WAIT
+LockProvider --> Instance2 : BUSY
 
 Instance1 -> LockProvider -- : unlock [foo, bar]
-LockProvider --> Instance1 -- : OK
+LockProvider --> Instance1 -- : LOCK RELEASED
 deactivate Instance1
 
-LockProvider --> Instance2 : OK
+LockProvider --> Instance2 : LOCK ACQUIRED
 activate LockProvider #FFBBBB
 Instance2 -> Instance2: run <<SynchroTask[foo, bar]>>
 activate Instance2
 Instance2 -> LockProvider -- : unlock [foo, bar]
-LockProvider --> Instance2 -- : OK
+LockProvider --> Instance2 -- : LOCK RELEASED
 deactivate Instance2
 
 @enduml

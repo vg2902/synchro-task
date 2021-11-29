@@ -6,7 +6,7 @@
     <groupId>org.vg2902</groupId>
     <artifactId>synchro-task-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.2.1-SNAPSHOT</version>
+    <version>0.3.0-SNAPSHOT</version>
 
     <name>synchro-task</name>
     <description>SynchroTask is a lightweight library which helps to synchronize Java routines in distributed environments</description>
@@ -63,10 +63,10 @@
         <junit.version>4.13.1</junit.version>
         <assertj.version>3.18.1</assertj.version>
         <assertj-db.version>2.0.2</assertj-db.version>
-        <awaitility.version>3.0.0</awaitility.version>
+        <awaitility.version>4.1.0</awaitility.version>
         <mockito.version>3.6.28</mockito.version>
 
-        <logback.version>1.2.3</logback.version>
+        <logback.version>1.2.6</logback.version>
 
         <spring.latest.version>5.3.10</spring.latest.version>
         <testcontainers.version>1.16.0</testcontainers.version>

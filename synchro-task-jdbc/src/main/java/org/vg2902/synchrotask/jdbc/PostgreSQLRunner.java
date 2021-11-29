@@ -17,18 +17,20 @@ package org.vg2902.synchrotask.jdbc;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.vg2902.synchrotask.core.api.LockTimeout;
 import org.vg2902.synchrotask.core.api.SynchroTask;
 
 import javax.sql.DataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
-import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
+import static org.vg2902.synchrotask.core.api.LockTimeout.SYSTEM_DEFAULT;
 import static org.vg2902.synchrotask.jdbc.EntryCreationResult.CREATION_RESULT_ALREADY_EXISTS;
 import static org.vg2902.synchrotask.jdbc.EntryCreationResult.CREATION_RESULT_OK;
 import static org.vg2902.synchrotask.jdbc.EntryLockResult.LOCK_RESULT_LOCKED_BY_ANOTHER_TASK;
@@ -44,6 +46,8 @@ import static org.vg2902.synchrotask.jdbc.EntryRemovalResult.REMOVAL_RESULT_OK;
  *     <li>duplicate key error code is <b>23505</b>;</li>
  *     <li>lock acquire error code is <b>55P03</b>;</li>
  *     <li>SQL exception vendor codes are retrieved using {@link SQLException#getSQLState()}</li>
+ *     <li><b>SELECT FOR UPDATE</b> does not support <b>WAIT</b> clause.
+ *     Instead, the implementation adjusts <b>lock_timeout</b> {@link java.sql.Connection} property.</li>
  * </ul>
  *
  * @see SynchroTask
@@ -53,6 +57,8 @@ import static org.vg2902.synchrotask.jdbc.EntryRemovalResult.REMOVAL_RESULT_OK;
 @Slf4j
 final class PostgreSQLRunner<T> extends AbstractSQLRunner<T> {
 
+    private static final long POSTGRESQL_MAX_LOCK_TIMEOUT_IN_MILLIS = 2147483647L;
+
     private static final Set<String> duplicateKeyErrorCodes = singleton("23505");
     private static final Set<String> cannotAcquireLockErrorCodes = singleton("55P03");
 
@@ -60,6 +66,8 @@ final class PostgreSQLRunner<T> extends AbstractSQLRunner<T> {
     private final String selectForUpdateQuery;
     private final String selectForUpdateNoWaitQuery;
     private final String deleteQuery;
+    private final String getLockTimeoutQuery;
+    private final String updateLockTimeoutQuery;
 
     PostgreSQLRunner(DataSource datasource, String tableName, SynchroTask<T> task) throws SQLException {
         super(datasource, tableName, task);
@@ -68,10 +76,13 @@ final class PostgreSQLRunner<T> extends AbstractSQLRunner<T> {
         selectForUpdateQuery = "SELECT task_name, task_id FROM " + tableName + " WHERE task_name = ? AND task_id = ? FOR UPDATE";
         selectForUpdateNoWaitQuery = selectForUpdateQuery + " NOWAIT";
         deleteQuery = "DELETE FROM " + tableName + " WHERE task_name = ? AND task_id = ?";
+        getLockTimeoutQuery = "SHOW lock_timeout";
+        updateLockTimeoutQuery = "SET lock_timeout = ?";
     }
 
     @Override
     public EntryCreationResult createLockEntry() throws SQLException {
+        super.checkNotClosed();
         log.debug("Creating a lock entry for {}", task);
 
         try {
@@ -90,8 +101,6 @@ final class PostgreSQLRunner<T> extends AbstractSQLRunner<T> {
     }
 
     private void insert() throws SQLException {
-        super.checkNotClosed();
-
         log.debug(insertQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(insertQuery)) {
@@ -115,10 +124,18 @@ final class PostgreSQLRunner<T> extends AbstractSQLRunner<T> {
 
     @Override
     public EntryLockResult acquireLock() throws SQLException {
+        super.checkNotClosed();
         log.debug("Acquiring lock for {}", task);
 
+        LockTimeout lockTimeout = getTask().getLockTimeout();
+        boolean isLockTimeoutAdjustmentRequired = lockTimeout != SYSTEM_DEFAULT;
+
+        int currentLockTimeoutInSeconds = 0;
+        if (isLockTimeoutAdjustmentRequired)
+            currentLockTimeoutInSeconds = adjustLockTimeout();
+
         try {
-            boolean noWait = task.getCollisionStrategy() != WAIT;
+            boolean noWait = lockTimeout.getValueInMillis() == 0;
             boolean isLocked = selectForUpdate(noWait);
 
             if (!isLocked)
@@ -129,14 +146,34 @@ final class PostgreSQLRunner<T> extends AbstractSQLRunner<T> {
             } else {
                 throw e;
             }
+        } finally {
+            if (isLockTimeoutAdjustmentRequired)
+                updateLockTimeout(currentLockTimeoutInSeconds);
         }
 
         return LOCK_RESULT_OK;
     }
 
-    private boolean selectForUpdate(boolean noWait) throws SQLException {
-        super.checkNotClosed();
+    private int adjustLockTimeout() throws SQLException {
+        LockTimeout lockTimeout = getTask().getLockTimeout();
+        int currentLockTimeoutInMillis = getLockTimeoutInMillis();
 
+        log.debug("Current lock timeout: {}ms", currentLockTimeoutInMillis);
+
+        long lockTimeoutInMillisOverride = lockTimeout.getValueInMillis();
+
+        if (lockTimeoutInMillisOverride > POSTGRESQL_MAX_LOCK_TIMEOUT_IN_MILLIS)
+            log.warn("Provided lock timeout " + lockTimeoutInMillisOverride + " exceeds PostgreSQL max supported value and will be adjusted to " + POSTGRESQL_MAX_LOCK_TIMEOUT_IN_MILLIS);
+
+        if (lockTimeout == LockTimeout.MAX_SUPPORTED || lockTimeoutInMillisOverride > POSTGRESQL_MAX_LOCK_TIMEOUT_IN_MILLIS)
+            lockTimeoutInMillisOverride = POSTGRESQL_MAX_LOCK_TIMEOUT_IN_MILLIS;
+
+        updateLockTimeout((int) lockTimeoutInMillisOverride);
+
+        return currentLockTimeoutInMillis;
+    }
+
+    private boolean selectForUpdate(boolean noWait) throws SQLException {
         String sql = noWait ? selectForUpdateNoWaitQuery : selectForUpdateQuery;
         log.debug(sql);
 
@@ -153,6 +190,30 @@ final class PostgreSQLRunner<T> extends AbstractSQLRunner<T> {
         }
     }
 
+    private int getLockTimeoutInMillis() throws SQLException {
+        log.debug(getLockTimeoutQuery);
+
+        try (Statement stmt = super.connection.createStatement()) {
+            ResultSet rs = stmt.executeQuery(getLockTimeoutQuery);
+            rs.next();
+            return rs.getInt(1);
+        }
+    }
+
+    private void updateLockTimeout(int lockTimeoutInSeconds) throws SQLException {
+        log.debug("Updating lock timeout to: {}", lockTimeoutInSeconds);
+
+        String updateTimeoutQuery = updateLockTimeoutQuery.replace("?", Integer.toString(lockTimeoutInSeconds));
+        log.debug(updateTimeoutQuery);
+
+        try (PreparedStatement updateTimeout = super.connection.prepareStatement(updateTimeoutQuery)) {
+            updateTimeout.executeUpdate();
+        } catch (SQLException e) {
+            super.connection.rollback();
+            throw e;
+        }
+    }
+
     @Override
     public boolean isCannotAcquireLock(SQLException e) {
         return isExceptionSQLStateIn(e, cannotAcquireLockErrorCodes);
@@ -160,6 +221,8 @@ final class PostgreSQLRunner<T> extends AbstractSQLRunner<T> {
 
     @Override
     public EntryRemovalResult removeLockEntry() throws SQLException {
+        super.checkNotClosed();
+
         if (delete())
             return REMOVAL_RESULT_OK;
         else
@@ -167,8 +230,6 @@ final class PostgreSQLRunner<T> extends AbstractSQLRunner<T> {
     }
 
     private boolean delete() throws SQLException {
-        super.checkNotClosed();
-
         log.debug(deleteQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(deleteQuery)) {

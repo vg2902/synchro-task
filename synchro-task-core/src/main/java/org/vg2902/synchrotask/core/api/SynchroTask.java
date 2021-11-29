@@ -19,6 +19,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.function.Supplier;
 
@@ -34,32 +35,37 @@ import static java.util.Objects.requireNonNull;
  * In other words, {@link SynchroTask} instance <b>acquires</b>/<b>releases</b> a <b>lock</b>
  * upon start/completion respectively.
  * <p>
- * {@link #collisionStrategy} attribute can be used to control how collisions caused by this SynchroTask
- * should be handled, see {@link CollisionStrategy} for available options.
- * If not specified explicitly during initialization, it is defaulted to {@link CollisionStrategy#WAIT}.
+ * {@link #lockTimeout} attribute can be used to control how long a blocked task should wait if it is blocked.
+ * When not specified, the task will be using {@link LockTimeout#SYSTEM_DEFAULT_TIMEOUT}. See {@link LockTimeout}
+ * for more detail.
+ * <p>
+ * If the timeout is over and the task is still blocked, it can either throw
+ * {@link org.vg2902.synchrotask.core.exception.SynchroTaskCollisionException} or return null.
+ * This behaviour can be switched using {@link #throwExceptionAfterTimeout} parameter, which default value is <b>true</b>
  * <p>
  * SynchroTask workload is provided in the form of {@link Supplier}, or {@link Runnable} for the tasks with no return value.
  * <p>
  * There are static builder methods to construct {@link SynchroTask} objects:
  *
  * <pre>
- *    // Throwing task with name <b>bar</b> and id <b>42</b> with no return value
+ *    // A task with name <b>bar</b> and id <b>42</b> with no return value, throwing the exception after 10s timeout
  *
  *    SynchroTask&lt;Void&gt; synchroTask = SynchroTask
  *            .from(() -&gt; System.out.println("foo"))
  *            .withName("bar")
  *            .withId(42)
- *            .onLock(CollisionStrategy.THROW)
+ *            .withLockTimeout(10000)
+ *            .throwExceptionAfterTimeout(true)
  *            .build();
  * </pre>
  * <pre>
- *    // Waiting task with name <b>bar</b> and id <b>42</b> with {@link String} return type
+ *    // A task with name <b>bar</b> and id <b>42</b> with {@link String} return type and the max timeout supported by the lock provider
  *
  *    SynchroTask&lt;String&gt; synchroTask = SynchroTask
  *            .from(() -&gt; "foo")
  *            .withName("bar")
  *            .withId(42)
- *            .onLock(CollisionStrategy.WAIT)
+ *            .withLockTimeout(LockTimeout.MAX_SUPPORTED)
  *            .build();
  * </pre>
  * <p>
@@ -71,18 +77,24 @@ import static java.util.Objects.requireNonNull;
  * These {@link String} representations will be actually passed into external lock providers.
  *
  * @param <T> task return type
- * @see CollisionStrategy
+ * @see LockTimeout
  * @see SynchroTaskService
  */
 @Getter
+@Slf4j
 @ToString(onlyExplicitlyIncluded = true)
 public class SynchroTask<T> {
 
-    private SynchroTask(Supplier<T> task, Object taskName, Object taskId, CollisionStrategy collisionStrategy) {
+    private SynchroTask(Supplier<T> task,
+                        Object taskName,
+                        Object taskId,
+                        LockTimeout lockTimeout,
+                        boolean throwExceptionAfterTimeout) {
         this.task = requireNonNull(task);
         this.taskName = requireNonNull(taskName);
         this.taskId = requireNonNull(taskId);
-        this.collisionStrategy = requireNonNull(collisionStrategy);
+        this.lockTimeout = requireNonNull(lockTimeout);
+        this.throwExceptionAfterTimeout = throwExceptionAfterTimeout;
     }
 
     private final Supplier<T> task;
@@ -94,7 +106,10 @@ public class SynchroTask<T> {
     private final Object taskId;
 
     @ToString.Include
-    private final CollisionStrategy collisionStrategy;
+    private final LockTimeout lockTimeout;
+
+    @ToString.Include
+    private final boolean throwExceptionAfterTimeout;
 
     public T execute() {
         return task.get();
@@ -114,7 +129,8 @@ public class SynchroTask<T> {
         private Supplier<T> task;
         private Object taskName;
         private Object taskId;
-        private CollisionStrategy collisionStrategy = CollisionStrategy.WAIT;
+        private LockTimeout lockTimeout = LockTimeout.SYSTEM_DEFAULT;
+        private boolean throwExceptionAfterTimeout = true;
 
         public static <T> SynchroTaskBuilder<T> from(Supplier<T> task) {
             SynchroTaskBuilder<T> builder = new SynchroTaskBuilder<>();
@@ -144,13 +160,67 @@ public class SynchroTask<T> {
             return this;
         }
 
+        /**
+         * @deprecated {@link CollisionStrategy} is a part of deprecated API and will be removed in the following releases.
+         * Use {@link LockTimeout} instead to control {@link SynchroTask} behaviour.
+         */
+        @Deprecated
         public SynchroTaskBuilder<T> onLock(CollisionStrategy collisionStrategy) {
-            this.collisionStrategy = requireNonNull(collisionStrategy);
+            mapCollisionStrategy(collisionStrategy);
+            return this;
+        }
+
+        private void mapCollisionStrategy(CollisionStrategy collisionStrategy) {
+            requireNonNull(collisionStrategy);
+
+            switch (collisionStrategy) {
+                case WAIT:
+                    this.lockTimeout = LockTimeout.SYSTEM_DEFAULT;
+                    this.throwExceptionAfterTimeout = true;
+                    break;
+                case RETURN:
+                    this.lockTimeout = LockTimeout.of(0);
+                    this.throwExceptionAfterTimeout = false;
+                    break;
+                case THROW:
+                    this.lockTimeout = LockTimeout.of(0);
+                    this.throwExceptionAfterTimeout = true;
+                    break;
+            }
+        }
+
+        public SynchroTaskBuilder<T> withDefaultLockTimeout() {
+            this.lockTimeout = LockTimeout.SYSTEM_DEFAULT;
+            return this;
+        }
+
+        public SynchroTaskBuilder<T> withMaxSupportedLockTimeout() {
+            this.lockTimeout = LockTimeout.MAX_SUPPORTED;
+            return this;
+        }
+
+        public SynchroTaskBuilder<T> withZeroLockTimeout() {
+            this.lockTimeout = LockTimeout.of(0);
+            return this;
+        }
+
+        public SynchroTaskBuilder<T> withLockTimeout(long lockTimeoutInMillis) {
+            this.lockTimeout = LockTimeout.of(lockTimeoutInMillis);
+            return this;
+        }
+
+        public SynchroTaskBuilder<T> withLockTimeout(LockTimeout lockTimeout) {
+            this.lockTimeout = lockTimeout;
+            return this;
+        }
+
+        public SynchroTaskBuilder<T> throwExceptionAfterTimeout(boolean throwExceptionAfterTimeout) {
+            this.throwExceptionAfterTimeout = throwExceptionAfterTimeout;
             return this;
         }
 
         public SynchroTask<T> build() {
-            return new SynchroTask<>(task, taskName, taskId, collisionStrategy);
+            return new SynchroTask<>(task, taskName, taskId, lockTimeout, throwExceptionAfterTimeout);
         }
     }
 }

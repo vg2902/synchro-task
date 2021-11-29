@@ -17,13 +17,12 @@ package org.vg2902.synchrotask.core.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.vg2902.synchrotask.core.api.CollisionStrategy;
 import org.vg2902.synchrotask.core.api.SynchroTask;
 import org.vg2902.synchrotask.core.api.SynchroTaskService;
 
 /**
- * Indicates a <b>collision</b>, i.e., an attempt to run a {@link SynchroTask} with {@link CollisionStrategy#THROW},
- * while another instance with the same <b>taskName</b> and <b>taskId</b> is still running.
+ * Indicates a <b>collision</b>, i.e., an attempt to run a {@link SynchroTask} while another instance with the same
+ * <b>taskName</b> and <b>taskId</b> is still running.
  * @see SynchroTaskService#run(SynchroTask)
  */
 @AllArgsConstructor

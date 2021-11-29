@@ -21,7 +21,9 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
+import org.vg2902.synchrotask.core.api.LockTimeout;
 import org.vg2902.synchrotask.core.api.SynchroTask;
+import org.vg2902.synchrotask.core.api.SynchroTask.SynchroTaskBuilder;
 import org.vg2902.synchrotask.core.api.SynchroTaskService;
 import org.vg2902.synchrotask.core.utils.ThrowableTaskResult;
 import org.vg2902.synchrotask.core.utils.ThrowableTaskUtils;
@@ -29,6 +31,8 @@ import org.vg2902.synchrotask.spring.TaskId;
 import org.vg2902.synchrotask.spring.TaskName;
 
 import java.lang.reflect.Method;
+
+import static org.vg2902.synchrotask.core.api.LockTimeout.SYSTEM_DEFAULT;
 
 /**
  * Implements the interceptor for {@link org.vg2902.synchrotask.spring.SynchroTask}-methods.
@@ -55,6 +59,12 @@ class SynchroTaskAdvice implements MethodInterceptor {
         org.vg2902.synchrotask.spring.SynchroTask annotation = SynchroTaskAopUtils.getSynchroTaskAnnotation(method);
         log.debug("SynchroTask strategy: {}", annotation.onLock());
 
+        LockTimeout lockTimeout = LockTimeout.of(annotation.lockTimeout());
+        log.debug("SynchroTask lock timeout: {}", lockTimeout);
+
+        boolean throwExceptionAfterTimeout = annotation.throwExceptionAfterTimeout();
+        log.debug("SynchroTask throwExceptionAfterTimeout: {}", throwExceptionAfterTimeout);
+
         String serviceName = annotation.serviceName();
         log.debug("SynchroTask service name: {}", serviceName);
 
@@ -67,12 +77,24 @@ class SynchroTaskAdvice implements MethodInterceptor {
         Object taskId = SynchroTaskAopUtils.getAnnotatedArgValue(methodInvocation, TaskId.class);
         log.debug("taskId value in SynchroTaskAdvice: {}", taskId);
 
-        SynchroTask<ThrowableTaskResult<Object>> synchroTask = SynchroTask
+        SynchroTaskBuilder<ThrowableTaskResult<Object>> builder = SynchroTask
                 .from(ThrowableTaskUtils.getSupplier(methodInvocation::proceed))
                 .withName(taskName)
-                .withId(taskId)
-                .onLock(annotation.onLock())
-                .build();
+                .withId(taskId);
+
+        if (lockTimeout != SYSTEM_DEFAULT || !throwExceptionAfterTimeout) {
+            log.debug("Applying lock timeout settings");
+
+            builder
+                    .withLockTimeout(lockTimeout)
+                    .throwExceptionAfterTimeout(throwExceptionAfterTimeout);
+        } else {
+            log.debug("Applying collision strategy settings");
+
+            builder.onLock(annotation.onLock());
+        }
+
+        SynchroTask<ThrowableTaskResult<Object>> synchroTask = builder.build();
 
         ThrowableTaskResult<Object> result = service.run(synchroTask);
 

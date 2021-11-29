@@ -20,7 +20,7 @@ import org.assertj.core.api.SoftAssertions;
 import org.assertj.db.type.Table;
 import org.junit.After;
 import org.junit.Test;
-import org.vg2902.synchrotask.core.api.CollisionStrategy;
+import org.vg2902.synchrotask.core.api.LockTimeout;
 import org.vg2902.synchrotask.core.api.SynchroTask;
 
 import javax.sql.DataSource;
@@ -59,7 +59,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
         LocalDateTime now = LocalDateTime.now();
         DataSource dataSource = getDataSource();
 
-        try (final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
+        try (final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
 
             sqlRunner.createLockEntry();
             Table synchroTaskAfter = new Table(dataSource, TABLE_NAME);
@@ -77,22 +77,22 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
     @Test
     public void selectsLockEntryForUpdateIfNotLocked() throws SQLException {
-        selectsLockEntryIfNotLocked(CollisionStrategy.WAIT);
+        selectsLockEntryIfNotLocked(LockTimeout.MAX_SUPPORTED);
     }
 
     @Test
     public void selectsLockEntryForUpdateNoWaitIfNotLocked() throws SQLException {
-        selectsLockEntryIfNotLocked(CollisionStrategy.THROW);
+        selectsLockEntryIfNotLocked(LockTimeout.of(0));
     }
 
-    public void selectsLockEntryIfNotLocked(CollisionStrategy collisionStrategy) throws SQLException {
+    public void selectsLockEntryIfNotLocked(LockTimeout lockTimeout) throws SQLException {
         DataSource dataSource = getDataSource();
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner1 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", collisionStrategy));
-             final SQLRunner<Void> sqlRunner2 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName2", "TaskId2", collisionStrategy));
-             final SQLRunner<Void> sqlRunner3 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName3", "TaskId3", collisionStrategy))) {
+             final SQLRunner<Void> sqlRunner1 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", lockTimeout));
+             final SQLRunner<Void> sqlRunner2 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName2", "TaskId2", lockTimeout));
+             final SQLRunner<Void> sqlRunner3 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName3", "TaskId3", lockTimeout))) {
 
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
@@ -113,20 +113,20 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
     @Test
     public void locksForUpdateIfNotLocked() throws SQLException {
-        locksIfNotLocked(CollisionStrategy.WAIT);
+        locksIfNotLocked(LockTimeout.MAX_SUPPORTED);
     }
 
     @Test
     public void locksForUpdateNoWaitIfNotLocked() throws SQLException {
-        locksIfNotLocked(CollisionStrategy.THROW);
+        locksIfNotLocked(LockTimeout.of(0));
     }
 
-    public void locksIfNotLocked(CollisionStrategy collisionStrategy) throws SQLException {
+    public void locksIfNotLocked(LockTimeout lockTimeout) throws SQLException {
         DataSource dataSource = getDataSource();
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", collisionStrategy))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", lockTimeout))) {
 
             Long synchroTaskSessionId = getSessionId(sqlRunner.getConnection());
             Long testSessionId = getSessionId(connection);
@@ -161,7 +161,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
 
             Long synchroTaskSessionId = getSessionId(sqlRunner.getConnection());
             Long testSessionId = getSessionId(connection);
@@ -193,7 +193,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getThrowingTestSynchroTask("TaskName1", "TaskId1"))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.of(0)))) {
 
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
@@ -211,7 +211,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
 
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:00')");
             connection.commit();
@@ -231,7 +231,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getWaitingTestSynchroTask("TaskName1", "TaskId1"))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
 
             statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:00')");
             connection.commit();
@@ -241,23 +241,11 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
         }
     }
 
-    public SynchroTask<Void> getWaitingTestSynchroTask(String taskName, String taskId) {
-        return getTestSynchroTask(taskName, taskId, CollisionStrategy.WAIT);
-    }
-
-    public SynchroTask<Void> getThrowingTestSynchroTask(String taskName, String taskId) {
-        return getTestSynchroTask(taskName, taskId, CollisionStrategy.THROW);
-    }
-
-    public SynchroTask<Void> getReturningTestSynchroTask(String taskName, String taskId) {
-        return getTestSynchroTask(taskName, taskId, CollisionStrategy.RETURN);
-    }
-
-    private SynchroTask<Void> getTestSynchroTask(String taskName, String taskId, CollisionStrategy strategy) {
+    static SynchroTask<Void> getTestSynchroTask(String taskName, String taskId, LockTimeout lockTimeout) {
         return SynchroTask.from(() -> {})
                 .withName(taskName)
                 .withId(taskId)
-                .onLock(strategy)
+                .withLockTimeout(lockTimeout)
                 .build();
     }
 }

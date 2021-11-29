@@ -17,6 +17,7 @@ package org.vg2902.synchrotask.jdbc;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.vg2902.synchrotask.core.api.LockTimeout;
 import org.vg2902.synchrotask.core.api.SynchroTask;
 
 import javax.sql.DataSource;
@@ -29,7 +30,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
-import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
+import static org.vg2902.synchrotask.core.api.LockTimeout.SYSTEM_DEFAULT;
 import static org.vg2902.synchrotask.jdbc.EntryCreationResult.CREATION_RESULT_ALREADY_EXISTS;
 import static org.vg2902.synchrotask.jdbc.EntryCreationResult.CREATION_RESULT_OK;
 import static org.vg2902.synchrotask.jdbc.EntryLockResult.LOCK_RESULT_LOCKED_BY_ANOTHER_TASK;
@@ -45,9 +46,8 @@ import static org.vg2902.synchrotask.jdbc.EntryRemovalResult.REMOVAL_RESULT_OK;
  *     <li>duplicate key error code is <b>23505</b>;</li>
  *     <li>lock acquire error code is <b>50200</b>;</li>
  *     <li>SQL exception vendor codes are retrieved using {@link SQLException#getErrorCode()}</li>
- *     <li><b>SELECT FOR UPDATE</b> does not support <b>NOWAIT</b> clause. In order to get <b>NOWAIT</b> semantics,
- *     the implementation adjusts <b>LOCK_TIMEOUT</b> {@link java.sql.Connection}-level property. The initial value of
- *     this property is restored prior to calling {@link java.sql.Connection#close()}.</li>
+ *     <li><b>SELECT FOR UPDATE</b> does not support <b>WAIT</b> and <b>NOWAIT</b> clauses.
+ *     Instead, the implementation adjusts <b>LOCK_TIMEOUT</b> {@link java.sql.Connection} parameter.</li>
  * </ul>
  *
  * @see SynchroTask
@@ -56,6 +56,8 @@ import static org.vg2902.synchrotask.jdbc.EntryRemovalResult.REMOVAL_RESULT_OK;
 @Getter
 @Slf4j
 final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
+
+    private static final int H2_MAX_LOCK_TIMEOUT_IN_MILLIS = Integer.MAX_VALUE;
 
     private static final Set<Integer> duplicateKeyErrorCodes = singleton(23505);
     private static final Set<Integer> cannotAcquireLockErrorCodes = singleton(50200);
@@ -78,6 +80,7 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
 
     @Override
     public EntryCreationResult createLockEntry() throws SQLException {
+        super.checkNotClosed();
         log.debug("Creating a lock entry for {}", task);
 
         try {
@@ -96,8 +99,6 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
     }
 
     private void insert() throws SQLException {
-        super.checkNotClosed();
-
         log.debug(insertQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(insertQuery)) {
@@ -117,11 +118,18 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
 
     @Override
     public EntryLockResult acquireLock() throws SQLException {
+        super.checkNotClosed();
         log.debug("Acquiring lock for {}", task);
 
+        LockTimeout lockTimeout = getTask().getLockTimeout();
+        boolean isLockTimeoutAdjustmentRequired = lockTimeout != SYSTEM_DEFAULT;
+
+        int currentLockTimeoutInMillis = 0;
+        if (isLockTimeoutAdjustmentRequired)
+            currentLockTimeoutInMillis = adjustLockTimeout();
+
         try {
-            boolean noWait = task.getCollisionStrategy() != WAIT;
-            boolean isLocked = selectForUpdate(noWait);
+            boolean isLocked = selectForUpdate();
 
             if (!isLocked)
                 return LOCK_RESULT_NOT_FOUND;
@@ -131,22 +139,33 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
             } else {
                 throw e;
             }
+        } finally {
+            if (isLockTimeoutAdjustmentRequired)
+                updateLockTimeout(currentLockTimeoutInMillis);
         }
 
         return LOCK_RESULT_OK;
     }
 
-    private boolean selectForUpdate(boolean noWait) throws SQLException {
-        super.checkNotClosed();
+    private int adjustLockTimeout() throws SQLException {
+        int currentLockTimeoutInMillis = getLockTimeoutInMillis();
+        log.debug("Current lock timeout: {}ms", currentLockTimeoutInMillis);
 
-        int lockTimeoutInMillis = 0;
+        LockTimeout lockTimeout = getTask().getLockTimeout();
+        long lockTimeoutInMillisOverride = lockTimeout.getValueInMillis();
 
-        if (noWait) {
-            lockTimeoutInMillis = getLockTimeoutInMillis();
-            log.debug("Current lock timeout: {}", lockTimeoutInMillis);
-            updateLockTimeout(0);
-        }
+        if (lockTimeoutInMillisOverride > H2_MAX_LOCK_TIMEOUT_IN_MILLIS)
+            log.warn("Provided lock timeout " + lockTimeoutInMillisOverride + " exceeds H2 max supported value and will be adjusted to " + H2_MAX_LOCK_TIMEOUT_IN_MILLIS);
 
+        if (lockTimeout == LockTimeout.MAX_SUPPORTED || lockTimeoutInMillisOverride > H2_MAX_LOCK_TIMEOUT_IN_MILLIS)
+            lockTimeoutInMillisOverride = H2_MAX_LOCK_TIMEOUT_IN_MILLIS;
+
+        updateLockTimeout((int) lockTimeoutInMillisOverride);
+
+        return currentLockTimeoutInMillis;
+    }
+
+    private boolean selectForUpdate() throws SQLException {
         log.debug(selectForUpdateQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(selectForUpdateQuery)) {
@@ -156,14 +175,12 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
             ResultSet resultSet = stmt.executeQuery();
 
             return resultSet.next();
-        } finally {
-            if (noWait) {
-                updateLockTimeout(lockTimeoutInMillis);
-            }
         }
     }
 
     private int getLockTimeoutInMillis() throws SQLException {
+        log.debug(getLockTimeoutQuery);
+
         try (Statement currentTimeout = super.connection.createStatement()) {
             ResultSet rs = currentTimeout.executeQuery(getLockTimeoutQuery);
             rs.next();
@@ -173,6 +190,7 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
 
     private void updateLockTimeout(int lockTimeoutInMillis) throws SQLException {
         log.debug("Updating lock timeout to: {}", lockTimeoutInMillis);
+        log.debug(updateLockTimeoutQuery);
 
         try (PreparedStatement updateTimeout = super.connection.prepareStatement(updateLockTimeoutQuery)) {
             updateTimeout.setInt(1, lockTimeoutInMillis);
@@ -187,6 +205,8 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
 
     @Override
     public EntryRemovalResult removeLockEntry() throws SQLException {
+        super.checkNotClosed();
+
         if (delete())
             return REMOVAL_RESULT_OK;
         else
@@ -194,8 +214,6 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
     }
 
     private boolean delete() throws SQLException {
-        super.checkNotClosed();
-
         log.debug(deleteQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(deleteQuery)) {

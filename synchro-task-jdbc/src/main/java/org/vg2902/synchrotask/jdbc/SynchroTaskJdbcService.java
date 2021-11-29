@@ -19,7 +19,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.vg2902.synchrotask.core.api.CollisionStrategy;
 import org.vg2902.synchrotask.core.api.SynchroTask;
 import org.vg2902.synchrotask.core.api.SynchroTaskService;
 import org.vg2902.synchrotask.core.exception.SynchroTaskCollisionException;
@@ -32,7 +31,7 @@ import java.util.function.BiConsumer;
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@link SynchroTaskService} implementation which uses a special "registry" table in a database to keep track
+ * {@link SynchroTaskService} implementation which uses a special "registry" database table to keep track
  * of running tasks and ensure synchronization.
  * The SQL below gives an example of such a table:
  * <pre>
@@ -61,7 +60,7 @@ import static java.util.Objects.requireNonNull;
  *          .from(ds)
  *          .build;
  * </pre>
- *
+ * <p>
  * There are also two optional parameters supported by the builder:
  *
  * <ul>
@@ -69,7 +68,7 @@ import static java.util.Objects.requireNonNull;
  *  <li>interceptor - gets triggered as part of {@link #run(SynchroTask)} invocations, capturing the task passed in
  *  and the {@link Connection} allocated for it. Mostly for testing and debugging purposes. </li>
  * </ul>
- *
+ * <p>
  * This snippet shows a possible usage of the builder with optional arguments:
  *
  * <pre>
@@ -81,7 +80,7 @@ import static java.util.Objects.requireNonNull;
  *          .withInterceptor((task, connection) -&gt; this::intercept))
  *          .build();
  * </pre>
- *
+ * <p>
  * where <b>intercept</b> method can be defined as
  *
  * <pre>
@@ -92,7 +91,6 @@ import static java.util.Objects.requireNonNull;
  *
  * @see SynchroTask
  * @see SynchroTaskService
- * @see CollisionStrategy
  */
 @Getter
 @Slf4j
@@ -115,7 +113,7 @@ public final class SynchroTaskJdbcService implements SynchroTaskService {
     }
 
     /**
-     * Executes the given <b>task</b> with respect to its {@link CollisionStrategy} using
+     * Executes the given <b>task</b> with respect to its timeout settings using
      * the registry table to keep track of running tasks and ensure synchronization.
      * <br>
      * Prior to the <b>task</b> executing, it will try to create and immediately lock a "control" row
@@ -125,22 +123,24 @@ public final class SynchroTaskJdbcService implements SynchroTaskService {
      * <p>
      * If the row already exists and is locked by another database session, then the {@link SynchroTask}
      * will be assumed as being currently executed, and the operation outcome will depend
-     * on the task {@link CollisionStrategy}.
+     * on the task {@link org.vg2902.synchrotask.core.api.LockTimeout} and
+     * {@link SynchroTask.SynchroTaskBuilder#throwExceptionAfterTimeout(boolean)} parameters.
      * <p>
      * Every invocation obtains a new {@link Connection} instance from the {@link DataSource}
-     * provided during initialization, to manage a task control row in the registry table. Connections are closed
+     * provided during initialization, to manage a task control row in the registry table. This connection is closed
      * when the method returns.
      * <p>
      * After successful {@link SynchroTask} completion, the row will be removed from the table, and the <b>task</b>
      * result will be returned.
      *
      * @param task {@link SynchroTask} instance
-     * @param <T> <b>task</b> return type
-     * @throws SynchroTaskCollisionException when <b>task</b> has {@link CollisionStrategy#THROW},
-     * and another {@link SynchroTask} instance with the same <b>taskName</b> and <b>taskId</b> is still running
-     * @throws SynchroTaskException in case of any unhandled exception occurred during {@link SynchroTask} execution.
-     * @throws UnsupportedDatabaseException if the database is not supported
+     * @param <T>  <b>task</b> return type
      * @return <b>task</b> return value
+     * @throws SynchroTaskCollisionException is thrown when the lock timeout of a task with
+     *                                       {@link SynchroTask.SynchroTaskBuilder#throwExceptionAfterTimeout(boolean)}
+     *                                       set to <b>true</b> is expired
+     * @throws SynchroTaskException          in case of any unhandled exception occurred during {@link SynchroTask} execution.
+     * @throws UnsupportedDatabaseException  if the database is not supported
      */
     @Override
     public <T> T run(SynchroTask<T> task) {
@@ -155,15 +155,10 @@ public final class SynchroTaskJdbcService implements SynchroTaskService {
             if (!lockManager.lock()) {
                 log.debug("Cannot get lock for {}", task);
 
-                switch (task.getCollisionStrategy()) {
-                    case RETURN:
-                        return null;
-                    case WAIT:
-                    case THROW:
-                        throw new SynchroTaskCollisionException(task);
-                    default:
-                        throw new IllegalStateException("Unexpected value: " + task.getCollisionStrategy());
-                }
+                if (task.isThrowExceptionAfterTimeout())
+                    throw new SynchroTaskCollisionException(task);
+                else
+                    return null;
             }
 
             result = task.execute();

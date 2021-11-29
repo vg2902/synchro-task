@@ -58,11 +58,9 @@ interface SQLRunner<T> extends AutoCloseable {
     /**
      * Locks the control row created in the registry table for the underlying {@link SynchroTask}.
      * <p>
-     * When the row is already locked by another session, the method behaviour should depend on
-     * the task {@link org.vg2902.synchrotask.core.api.CollisionStrategy}.
+     * If the row is already locked by another session, the method should wait for it to release the lock for at most the
+     * amount of time specified in the task {@link org.vg2902.synchrotask.core.api.LockTimeout} settings.
      * <p>
-     * If it is set to {@link org.vg2902.synchrotask.core.api.CollisionStrategy#WAIT}, then the method should wait
-     * until the other sessions release the lock, otherwise it should immediately try to acquire a lock and return.
      * If the lock is acquired successfully, the method should leave the current transaction uncommitted.
      * <p>
      * Implementations should check for specific vendor error codes to correctly identify a locking exception

@@ -24,16 +24,17 @@ import org.vg2902.synchrotask.core.exception.SynchroTaskException;
 public interface SynchroTaskService {
 
     /**
-     * Executes the given <b>task</b> with respect to its {@link CollisionStrategy}.
+     * Executes the given <b>task</b> with respect to its timeout settings.
      *
      * @param task {@link SynchroTask} instance
-     * @param <T> <b>task</b> return type
-     * @throws SynchroTaskCollisionException when <b>task</b> has {@link CollisionStrategy#THROW},
-     * and another {@link SynchroTask} instance with the same <b>taskName</b> and <b>taskId</b> is still running
-     * @throws SynchroTaskException in case of any unhandled exception occurred during {@link SynchroTask} execution.
+     * @param <T>  <b>task</b> return type
      * @return <b>task</b> return value
+     * @throws SynchroTaskCollisionException is thrown when the lock timeout of a task with
+     *                                       {@link SynchroTask.SynchroTaskBuilder#throwExceptionAfterTimeout(boolean)}
+     *                                       set to <b>true</b> is expired
+     * @throws SynchroTaskException          in case of any unhandled exception occurred during {@link SynchroTask} execution.
+     * @see LockTimeout
      * @see SynchroTask
-     * @see CollisionStrategy
      */
     <T> T run(SynchroTask<T> task);
 }

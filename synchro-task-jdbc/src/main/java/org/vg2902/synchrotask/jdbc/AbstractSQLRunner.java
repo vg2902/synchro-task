@@ -96,6 +96,7 @@ abstract class AbstractSQLRunner<T> implements SQLRunner<T> {
         if (connection.isClosed())
             return;
 
+        connection.rollback();
         restoreConnection();
         connection.close();
 
