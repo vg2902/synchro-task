@@ -5,7 +5,7 @@
     <parent>
         <artifactId>synchro-task-test</artifactId>
         <groupId>org.vg2902</groupId>
-        <version>0.3.0</version>
+        <version>0.3.1-SNAPSHOT</version>
     </parent>
 
     <packaging>pom</packaging>
