@@ -47,7 +47,7 @@ public interface H2DatabaseIT extends DatabaseIT {
         DataSource dataSource = getDataSource();
 
         try (final Connection connection = dataSource.getConnection();
-             final PreparedStatement statement = connection.prepareStatement("SELECT * FROM information_schema.sessions WHERE id = ? AND blocker_id = ?")) {
+             final PreparedStatement statement = connection.prepareStatement("SELECT * FROM information_schema.sessions WHERE session_id = ? AND blocker_id = ?")) {
 
             statement.setLong(1, blockedSessionId);
             statement.setLong(2, blockingSessionId);

@@ -68,7 +68,7 @@
 
         <logback.version>1.2.6</logback.version>
 
-        <spring.latest.version>5.3.10</spring.latest.version>
+        <spring.latest.version>5.3.14</spring.latest.version>
         <testcontainers.version>1.16.0</testcontainers.version>
     </properties>
 
