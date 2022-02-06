@@ -18,7 +18,7 @@
         <h2.version>2.1.210</h2.version>
         <mysql.version>8.0.25</mysql.version>
         <oracle.version>19.3.0.0</oracle.version>
-        <postgresql.version>42.2.20</postgresql.version>
+        <postgresql.version>42.3.2</postgresql.version>
     </properties>
 
     <dependencies>
