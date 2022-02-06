@@ -26,6 +26,7 @@ and **SynchroTask** library is one of those agents.
 * [Spring integration](#spring-integration)
 * [Logging](#logging)
 * [Release notes](#release-notes)
+  * [0.3.1](#031)
   * [0.3.0](#030)
   * [0.2.0](#020)
   * [0.1.0](#010)
@@ -589,6 +590,12 @@ timeout twice.
 As a workaround, provide a halved lock timeout value
 
 ## Release notes
+### 0.3.1
+* Addressing vulnerabilities
+  * https://nvd.nist.gov/vuln/detail/CVE-2021-42392
+  * https://nvd.nist.gov/vuln/detail/CVE-2022-21724
+  * https://nvd.nist.gov/vuln/detail/CVE-2022-23221
+
 ### 0.3.0
 * JDBC provider now supports MySQL database
 * Lock timeout support added
