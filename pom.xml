@@ -6,7 +6,7 @@
     <groupId>org.vg2902</groupId>
     <artifactId>synchro-task-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.3.2-SNAPSHOT</version>
+    <version>0.3.2</version>
 
     <name>synchro-task</name>
     <description>SynchroTask is a lightweight library which helps to synchronize Java routines in distributed environments</description>
@@ -30,7 +30,7 @@
         <connection>scm:git:git@github.com:vg2902/synchro-task.git</connection>
         <developerConnection>scm:git:git@github.com:vg2902/synchro-task.git</developerConnection>
         <url>http://github.com/vg2902/synchro-task/tree/master</url>
-      <tag>HEAD</tag>
+      <tag>synchro-task-0.3.2</tag>
   </scm>
 
     <distributionManagement>
