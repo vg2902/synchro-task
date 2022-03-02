@@ -26,6 +26,7 @@ and **SynchroTask** library is one of those agents.
 * [Spring integration](#spring-integration)
 * [Logging](#logging)
 * [Release notes](#release-notes)
+  * [0.3.2](#032)
   * [0.3.1](#031)
   * [0.3.0](#030)
   * [0.2.0](#020)
@@ -355,7 +356,7 @@ The `Connection` will always be closed before returning from the method.
 <dependency>
     <groupId>org.vg2902</groupId>
     <artifactId>synchro-task-jdbc</artifactId>
-    <version>0.3.0</version>
+    <version>0.3.2</version>
 </dependency>
 ```
 
@@ -449,7 +450,7 @@ With SynchroTask Spring extension, you don't need to construct your tasks manual
 <dependency>
     <groupId>org.vg2902</groupId>
     <artifactId>synchro-task-spring</artifactId>
-    <version>0.3.0</version>
+    <version>0.3.2</version>
 </dependency>
 ```
 
@@ -590,6 +591,15 @@ timeout twice.
 As a workaround, provide a halved lock timeout value
 
 ## Release notes
+### 0.3.2
+* Addressing vulnerabilities
+  * https://github.com/advisories/GHSA-673j-qm5f-xpv8
+### 0.3.1
+* Addressing vulnerabilities
+  * https://nvd.nist.gov/vuln/detail/CVE-2021-42392
+  * https://nvd.nist.gov/vuln/detail/CVE-2022-21724
+  * https://nvd.nist.gov/vuln/detail/CVE-2022-23221
+
 ### 0.3.1
 * Addressing vulnerabilities
   * https://nvd.nist.gov/vuln/detail/CVE-2021-42392
