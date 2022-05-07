@@ -34,7 +34,7 @@ import static org.vg2902.synchrotask.jdbc.ConnectionProperty.TRANSACTION_ISOLATI
 
 /**
  * Base class for {@link SQLRunner} implementations.
- * Provides a common mechanism to save and restore database connection settings that ma be changed during
+ * Provides a common mechanism to save and restore database connection settings that may be changed during
  * {@link SynchroTask} execution.
  */
 @Getter(AccessLevel.PUBLIC)

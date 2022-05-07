@@ -21,7 +21,7 @@ import org.vg2902.synchrotask.core.api.SynchroTaskLockManager;
 import org.vg2902.synchrotask.core.exception.SynchroTaskException;
 
 /**
- * Implements lock/unlock functionality for a given {@link SynchroTask} using database as an underlying lock provider.
+ * Implements lock/unlock functionality for a given {@link SynchroTask} using database as an underlying lock provider
  * @see SynchroTask
  * @see SynchroTaskJdbcService
  */

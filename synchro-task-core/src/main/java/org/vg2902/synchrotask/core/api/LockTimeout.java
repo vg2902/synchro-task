@@ -23,7 +23,7 @@ import lombok.Getter;
  * <p>
  * Initialized by a non-negative argument representing a timeout in milliseconds.
  * <p>
- * There are two pre-defined shared instances:
+ * There are two pre-defined values:
  * <p>
  * <ul>
  *     <li>{@link #MAX_SUPPORTED} tasks with this timeout will wait as long as it is possibly allowed by the
