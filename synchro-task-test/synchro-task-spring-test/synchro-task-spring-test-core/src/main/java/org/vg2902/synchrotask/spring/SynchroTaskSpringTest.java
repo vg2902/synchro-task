@@ -72,131 +72,131 @@ public class SynchroTaskSpringTest {
 
     @Test
     public void waitingTask() {
-        String result = testRunner.waitingTask("wait", 1);
+        String result = testRunner.waitingTask("wait", "one");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("waitingTask:wait:1");
-        assertTask(assertions, lastTask, "wait", 1, LockTimeout.SYSTEM_DEFAULT, true);
+        assertions.assertThat(result).isEqualTo("waitingTask:wait:one");
+        assertTask(assertions, lastTask, "wait", "one", LockTimeout.SYSTEM_DEFAULT, true);
         assertions.assertAll();
     }
 
     @Test
     public void throwingTask() {
-        String result = testRunner.throwingTask("throw", 2);
+        String result = testRunner.throwingTask("throw", "two");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("throwingTask:throw:2");
-        assertTask(assertions, lastTask, "throw", 2, LockTimeout.of(0), true);
+        assertions.assertThat(result).isEqualTo("throwingTask:throw:two");
+        assertTask(assertions, lastTask, "throw", "two", LockTimeout.of(0), true);
         assertions.assertAll();
     }
 
     @Test
     public void returningTask() {
-        String result = testRunner.returningTask("return", 3);
+        String result = testRunner.returningTask("return", "three");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("returningTask:return:3");
-        assertTask(assertions, lastTask, "return", 3, LockTimeout.of(0), false);
+        assertions.assertThat(result).isEqualTo("returningTask:return:three");
+        assertTask(assertions, lastTask, "return", "three", LockTimeout.of(0), false);
         assertions.assertAll();
     }
 
     @Test
     public void defaultService() {
-        String result = testRunner.defaultTask("default", 4);
+        String result = testRunner.defaultTask("default", "four");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("defaultTask:default:4");
-        assertTask(assertions, lastTask, "default", 4, LockTimeout.SYSTEM_DEFAULT, true);
+        assertions.assertThat(result).isEqualTo("defaultTask:default:four");
+        assertTask(assertions, lastTask, "default", "four", LockTimeout.SYSTEM_DEFAULT, true);
         assertions.assertAll();
     }
 
     @Test
     public void failingTask() {
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThatThrownBy(() -> testRunner.failingTask("fail", 5)).isInstanceOf(TestException.class);
+        assertions.assertThatThrownBy(() -> testRunner.failingTask("fail", "five")).isInstanceOf(TestException.class);
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
-        assertTask(assertions, lastTask, "fail", 5, LockTimeout.SYSTEM_DEFAULT, true);
+        assertTask(assertions, lastTask, "fail", "five", LockTimeout.SYSTEM_DEFAULT, true);
         assertions.assertAll();
     }
 
     @Test
     public void taskWithService1() {
-        String result = testRunner.taskWithService1("default1", 6);
+        String result = testRunner.taskWithService1("default1", "six");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("defaultTaskWithService1:default1:6");
-        assertTask(assertions, lastTask, "default1", 6, LockTimeout.SYSTEM_DEFAULT, true);
+        assertions.assertThat(result).isEqualTo("defaultTaskWithService1:default1:six");
+        assertTask(assertions, lastTask, "default1", "six", LockTimeout.SYSTEM_DEFAULT, true);
         assertions.assertAll();
     }
 
     @Test
     public void taskWithService2() {
-        String result = testRunner.taskWithService2("default2", 7);
+        String result = testRunner.taskWithService2("default2", "seven");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service2.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("defaultTaskWithService2:default2:7");
-        assertTask(assertions, lastTask, "default2", 7, LockTimeout.SYSTEM_DEFAULT, true);
+        assertions.assertThat(result).isEqualTo("defaultTaskWithService2:default2:seven");
+        assertTask(assertions, lastTask, "default2", "seven", LockTimeout.SYSTEM_DEFAULT, true);
         assertions.assertAll();
     }
 
     @Test
     public void noLockTimeoutTask() {
-        String result = testRunner.noLockTimeoutTask("noLock", 8);
+        String result = testRunner.noLockTimeoutTask("noLock", "eight");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("noLockTimeoutTask:noLock:8");
-        assertTask(assertions, lastTask, "noLock", 8, LockTimeout.of(0), true);
+        assertions.assertThat(result).isEqualTo("noLockTimeoutTask:noLock:eight");
+        assertTask(assertions, lastTask, "noLock", "eight", LockTimeout.of(0), true);
         assertions.assertAll();
     }
 
     @Test
     public void defaultLockTimeoutTask() {
-        String result = testRunner.defaultLockTimeoutTask("defaultLock", 9);
+        String result = testRunner.defaultLockTimeoutTask("defaultLock", "nine");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("defaultLockTimeoutTask:defaultLock:9");
-        assertTask(assertions, lastTask, "defaultLock", 9, SYSTEM_DEFAULT, true);
+        assertions.assertThat(result).isEqualTo("defaultLockTimeoutTask:defaultLock:nine");
+        assertTask(assertions, lastTask, "defaultLock", "nine", SYSTEM_DEFAULT, true);
         assertions.assertAll();
     }
 
     @Test
     public void maxSupportedLockTimeoutTask() {
-        String result = testRunner.maxSupportedLockTimeoutTask("maxSupportedLock", 10);
+        String result = testRunner.maxSupportedLockTimeoutTask("maxSupportedLock", "ten");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("maxSupportedLockTimeoutTask:maxSupportedLock:10");
-        assertTask(assertions, lastTask, "maxSupportedLock", 10, MAX_SUPPORTED, true);
+        assertions.assertThat(result).isEqualTo("maxSupportedLockTimeoutTask:maxSupportedLock:ten");
+        assertTask(assertions, lastTask, "maxSupportedLock", "ten", MAX_SUPPORTED, true);
         assertions.assertAll();
     }
 
     @Test
     public void customLockTimeoutTask() {
-        String result = testRunner.customLockTimeoutTask("customLock", 11);
+        String result = testRunner.customLockTimeoutTask("customLock", "eleven");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("customLockTimeoutTask:customLock:11");
-        assertTask(assertions, lastTask, "customLock", 11, LockTimeout.of(20000), true);
+        assertions.assertThat(result).isEqualTo("customLockTimeoutTask:customLock:eleven");
+        assertTask(assertions, lastTask, "customLock", "eleven", LockTimeout.of(20000), true);
         assertions.assertAll();
     }
 
     @Test
     public void returningTimeoutTask() {
-        String result = testRunner.returningTimeoutTask("returningWIthTimeout", 12);
+        String result = testRunner.returningTimeoutTask("returningWIthTimeout", "twelve");
         org.vg2902.synchrotask.core.api.SynchroTask<?> lastTask = service1.getLastTask();
 
         SoftAssertions assertions = new SoftAssertions();
-        assertions.assertThat(result).isEqualTo("returningTimeoutTask:returningWIthTimeout:12");
-        assertTask(assertions, lastTask, "returningWIthTimeout", 12, LockTimeout.MAX_SUPPORTED, false);
+        assertions.assertThat(result).isEqualTo("returningTimeoutTask:returningWIthTimeout:twelve");
+        assertTask(assertions, lastTask, "returningWIthTimeout", "twelve", LockTimeout.MAX_SUPPORTED, false);
         assertions.assertAll();
     }
 

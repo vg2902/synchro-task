@@ -32,14 +32,14 @@ public class SynchroTaskTest {
         SynchroTask<String> synchroTask = SynchroTask
                 .from(() -> "foo")
                 .withName("bar")
-                .withId(42)
+                .withId("42")
                 .withLockTimeout(LockTimeout.MAX_SUPPORTED)
                 .throwExceptionAfterTimeout(false)
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isEqualTo(LockTimeout.MAX_SUPPORTED);
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(false);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -55,7 +55,7 @@ public class SynchroTaskTest {
                     sideEffectFlag[0] = true;
                 })
                 .withName("bar")
-                .withId(42)
+                .withId("42")
                 .withLockTimeout(LockTimeout.MAX_SUPPORTED)
                 .throwExceptionAfterTimeout(false)
                 .build();
@@ -64,7 +64,7 @@ public class SynchroTaskTest {
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isEqualTo(LockTimeout.MAX_SUPPORTED);
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(false);
         assertions.assertThat(sideEffectFlag[0]).isTrue();
@@ -76,12 +76,12 @@ public class SynchroTaskTest {
         SynchroTask<String> synchroTask = SynchroTask
                 .from(() -> "foo")
                 .withName("bar")
-                .withId(42)
+                .withId("42")
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isEqualTo(LockTimeout.SYSTEM_DEFAULT);
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(true);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -94,12 +94,12 @@ public class SynchroTaskTest {
                 .from(() -> "foo")
                 .withName("bar")
                 .withDefaultLockTimeout()
-                .withId(42)
+                .withId("42")
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isSameAs(LockTimeout.SYSTEM_DEFAULT);
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(true);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -112,12 +112,12 @@ public class SynchroTaskTest {
                 .from(() -> "foo")
                 .withName("bar")
                 .withLockTimeout(LockTimeout.SYSTEM_DEFAULT_TIMEOUT)
-                .withId(42)
+                .withId("42")
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isSameAs(LockTimeout.SYSTEM_DEFAULT);
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(true);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -130,12 +130,12 @@ public class SynchroTaskTest {
                 .from(() -> "foo")
                 .withName("bar")
                 .withMaxSupportedLockTimeout()
-                .withId(42)
+                .withId("42")
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isSameAs(LockTimeout.MAX_SUPPORTED);
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(true);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -148,12 +148,12 @@ public class SynchroTaskTest {
                 .from(() -> "foo")
                 .withName("bar")
                 .withLockTimeout(LockTimeout.MAX_SUPPORTED_TIMEOUT)
-                .withId(42)
+                .withId("42")
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isSameAs(LockTimeout.MAX_SUPPORTED);
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(true);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -166,12 +166,12 @@ public class SynchroTaskTest {
                 .from(() -> "foo")
                 .withName("bar")
                 .withZeroLockTimeout()
-                .withId(42)
+                .withId("42")
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isEqualTo(LockTimeout.of(0));
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(true);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -184,12 +184,12 @@ public class SynchroTaskTest {
                 .from(() -> "foo")
                 .withName("bar")
                 .withLockTimeout(5)
-                .withId(42)
+                .withId("42")
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout().getValueInMillis()).isEqualTo(5);
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(true);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -202,12 +202,12 @@ public class SynchroTaskTest {
                 .from(() -> "foo")
                 .withName("bar")
                 .withLockTimeout(LockTimeout.of(5L))
-                .withId(42)
+                .withId("42")
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout().getValueInMillis()).isEqualTo(5);
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(true);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -240,7 +240,7 @@ public class SynchroTaskTest {
     public void doesNotAcceptMissingTaskName() {
         SynchroTaskBuilder<Void> builder = SynchroTask
                 .from(noop)
-                .withId(42);
+                .withId("42");
 
         assertThatThrownBy(builder::build).isInstanceOf(NullPointerException.class);
     }
@@ -271,13 +271,13 @@ public class SynchroTaskTest {
         SynchroTask<String> synchroTask = SynchroTask
                 .from(() -> "foo")
                 .withName("bar")
-                .withId(42)
+                .withId("42")
                 .onLock(CollisionStrategy.THROW)
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isEqualTo(LockTimeout.of(0));
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(true);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -289,13 +289,13 @@ public class SynchroTaskTest {
         SynchroTask<String> synchroTask = SynchroTask
                 .from(() -> "foo")
                 .withName("bar")
-                .withId(42)
+                .withId("42")
                 .onLock(CollisionStrategy.WAIT)
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isEqualTo(LockTimeout.SYSTEM_DEFAULT);
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(true);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");
@@ -307,13 +307,13 @@ public class SynchroTaskTest {
         SynchroTask<String> synchroTask = SynchroTask
                 .from(() -> "foo")
                 .withName("bar")
-                .withId(42)
+                .withId("42")
                 .onLock(CollisionStrategy.RETURN)
                 .build();
 
         SoftAssertions assertions = new SoftAssertions();
         assertions.assertThat(synchroTask.getTaskName()).isEqualTo("bar");
-        assertions.assertThat(synchroTask.getTaskId()).isEqualTo(42);
+        assertions.assertThat(synchroTask.getTaskId()).isEqualTo("42");
         assertions.assertThat(synchroTask.getLockTimeout()).isEqualTo(LockTimeout.of(0));
         assertions.assertThat(synchroTask.isThrowExceptionAfterTimeout()).isEqualTo(false);
         assertions.assertThat(synchroTask.execute()).isEqualTo("foo");

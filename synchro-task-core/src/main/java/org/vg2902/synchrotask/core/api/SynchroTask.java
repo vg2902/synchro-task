@@ -53,7 +53,7 @@ import static java.util.Objects.requireNonNull;
  *    SynchroTask&lt;Void&gt; synchroTask = SynchroTask
  *            .from(() -&gt; System.out.println("foo"))
  *            .withName("bar")
- *            .withId(42)
+ *            .withId("42")
  *            .withLockTimeout(10000)
  *            .throwExceptionAfterTimeout(true)
  *            .build();
@@ -64,17 +64,13 @@ import static java.util.Objects.requireNonNull;
  *    SynchroTask&lt;String&gt; synchroTask = SynchroTask
  *            .from(() -&gt; "foo")
  *            .withName("bar")
- *            .withId(42)
+ *            .withId("42")
  *            .withLockTimeout(LockTimeout.MAX_SUPPORTED)
  *            .build();
  * </pre>
  * <p>
  * All attributes passed to the builder must not be null, otherwise {@link SynchroTaskBuilder#build()}
  * will throw {@link NullPointerException}.
- * <p>
- * Although {@link #taskName} and {@link #taskId} can be objects of any type, all {@link SynchroTaskService}
- * implementations will internally convert them into {@link String} applying {@link String#valueOf(Object)}.
- * These {@link String} representations will be actually passed into external lock providers.
  *
  * @param <T> task return type
  * @see LockTimeout
@@ -86,8 +82,8 @@ import static java.util.Objects.requireNonNull;
 public class SynchroTask<T> {
 
     private SynchroTask(Supplier<T> task,
-                        Object taskName,
-                        Object taskId,
+                        String taskName,
+                        String taskId,
                         LockTimeout lockTimeout,
                         boolean throwExceptionAfterTimeout) {
         this.task = requireNonNull(task);
@@ -100,10 +96,10 @@ public class SynchroTask<T> {
     private final Supplier<T> task;
 
     @ToString.Include
-    private final Object taskName;
+    private final String taskName;
 
     @ToString.Include
-    private final Object taskId;
+    private final String taskId;
 
     @ToString.Include
     private final LockTimeout lockTimeout;
@@ -127,8 +123,8 @@ public class SynchroTask<T> {
     public static final class SynchroTaskBuilder<T> {
 
         private Supplier<T> task;
-        private Object taskName;
-        private Object taskId;
+        private String taskName;
+        private String taskId;
         private LockTimeout lockTimeout = LockTimeout.SYSTEM_DEFAULT;
         private boolean throwExceptionAfterTimeout = true;
 
@@ -150,12 +146,12 @@ public class SynchroTask<T> {
             return builder;
         }
 
-        public SynchroTaskBuilder<T> withName(Object taskName) {
+        public SynchroTaskBuilder<T> withName(String taskName) {
             this.taskName = requireNonNull(taskName);
             return this;
         }
 
-        public SynchroTaskBuilder<T> withId(Object taskId) {
+        public SynchroTaskBuilder<T> withId(String taskId) {
             this.taskId = requireNonNull(taskId);
             return this;
         }

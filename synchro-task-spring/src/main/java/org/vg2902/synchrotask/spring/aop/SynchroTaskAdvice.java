@@ -79,8 +79,8 @@ class SynchroTaskAdvice implements MethodInterceptor {
 
         SynchroTaskBuilder<ThrowableTaskResult<Object>> builder = SynchroTask
                 .from(ThrowableTaskUtils.getSupplier(methodInvocation::proceed))
-                .withName(taskName)
-                .withId(taskId);
+                .withName(String.valueOf(taskName))
+                .withId(String.valueOf(taskId));
 
         if (lockTimeout != SYSTEM_DEFAULT || !throwExceptionAfterTimeout) {
             log.debug("Applying lock timeout settings");

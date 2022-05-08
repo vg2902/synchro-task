@@ -100,8 +100,8 @@ final class OracleSQLRunner<T> extends AbstractSQLRunner<T> {
         log.debug(insertQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(insertQuery)) {
-            stmt.setString(1, String.valueOf(task.getTaskName()));
-            stmt.setString(2, String.valueOf(task.getTaskId()));
+            stmt.setString(1, task.getTaskName());
+            stmt.setString(2, task.getTaskId());
             stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
 
             stmt.executeUpdate();
@@ -158,8 +158,8 @@ final class OracleSQLRunner<T> extends AbstractSQLRunner<T> {
         log.debug(selectForUpdate);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(selectForUpdate)) {
-            stmt.setString(1, String.valueOf(super.task.getTaskName()));
-            stmt.setString(2, String.valueOf(super.task.getTaskId()));
+            stmt.setString(1, super.task.getTaskName());
+            stmt.setString(2, super.task.getTaskId());
 
             ResultSet resultSet = stmt.executeQuery();
 
@@ -186,8 +186,8 @@ final class OracleSQLRunner<T> extends AbstractSQLRunner<T> {
         log.debug(deleteQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(deleteQuery)) {
-            stmt.setString(1, String.valueOf(task.getTaskName()));
-            stmt.setString(2, String.valueOf(task.getTaskId()));
+            stmt.setString(1, task.getTaskName());
+            stmt.setString(2, task.getTaskId());
 
             int cnt = stmt.executeUpdate();
 
