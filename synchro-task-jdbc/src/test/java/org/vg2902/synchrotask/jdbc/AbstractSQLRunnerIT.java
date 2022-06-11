@@ -59,7 +59,7 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
         LocalDateTime now = LocalDateTime.now();
         DataSource dataSource = getDataSource();
 
-        try (final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
+        try (final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
 
             sqlRunner.createLockEntry();
             Table synchroTaskAfter = new Table(dataSource, TABLE_NAME);
@@ -67,7 +67,6 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
             org.assertj.db.api.SoftAssertions dbAssertions = new org.assertj.db.api.SoftAssertions();
             dbAssertions.assertThat(synchroTaskAfter).hasNumberOfRows(1);
             dbAssertions.assertThat(synchroTaskAfter).row(0)
-                    .column("TASK_NAME").value().isEqualTo("TaskName1")
                     .column("TASK_ID").value().isEqualTo("TaskId1")
                     .column("CREATION_TIME").value().isAfterOrEqualTo(now);
 
@@ -90,12 +89,12 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner1 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", lockTimeout));
-             final SQLRunner<Void> sqlRunner2 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName2", "TaskId2", lockTimeout));
-             final SQLRunner<Void> sqlRunner3 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName3", "TaskId3", lockTimeout))) {
+             final SQLRunner<Void> sqlRunner1 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", lockTimeout));
+             final SQLRunner<Void> sqlRunner2 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId2", lockTimeout));
+             final SQLRunner<Void> sqlRunner3 = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId3", lockTimeout))) {
 
-            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
-            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_id, creation_time) VALUES ('TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_id, creation_time) VALUES ('TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
             connection.commit();
 
 
@@ -126,18 +125,18 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", lockTimeout))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", lockTimeout))) {
 
             Long synchroTaskSessionId = getSessionId(sqlRunner.getConnection());
             Long testSessionId = getSessionId(connection);
 
-            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
-            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_id, creation_time) VALUES ('TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_id, creation_time) VALUES ('TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
             connection.commit();
 
             EntryLockResult result = sqlRunner.acquireLock();
 
-            new Thread(() -> lockInNewSession(connection, "TaskName1", "TaskId1")).start();
+            new Thread(() -> lockInNewSession(connection, "TaskId1")).start();
             await().atMost(WAITING_SECONDS, TimeUnit.SECONDS).until(() -> isDatabaseSessionBlocked(testSessionId, synchroTaskSessionId));
             sqlRunner.getConnection().commit();
 
@@ -145,10 +144,9 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
         }
     }
 
-    private void lockInNewSession(Connection connection, String taskName, String taskId) {
-        try (final PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + TABLE_NAME + " WHERE task_name = ? AND task_id = ? FOR UPDATE")) {
-            statement.setString(1, taskName);
-            statement.setString(2, taskId);
+    private void lockInNewSession(Connection connection, String taskId) {
+        try (final PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + TABLE_NAME + " WHERE task_id = ? FOR UPDATE")) {
+            statement.setString(1, taskId);
             statement.executeQuery();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -161,15 +159,15 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
 
             Long synchroTaskSessionId = getSessionId(sqlRunner.getConnection());
             Long testSessionId = getSessionId(connection);
 
-            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
-            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_id, creation_time) VALUES ('TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_id, creation_time) VALUES ('TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
             connection.commit();
-            statement.executeQuery("SELECT * FROM " + TABLE_NAME + " WHERE task_name = 'TaskName1' AND task_id = 'TaskId1' FOR UPDATE");
+            statement.executeQuery("SELECT * FROM " + TABLE_NAME + " WHERE task_id = 'TaskId1' FOR UPDATE");
 
             new Thread(() -> {
                 try {
@@ -193,12 +191,12 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.of(0)))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.of(0)))) {
 
-            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
-            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName2', 'TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_id, creation_time) VALUES ('TaskId1', TIMESTAMP '2000-01-01 00:00:01')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_id, creation_time) VALUES ('TaskId2', TIMESTAMP '2000-01-01 00:00:02')");
             connection.commit();
-            statement.executeQuery("SELECT * FROM " + TABLE_NAME + " WHERE task_name = 'TaskName1' AND task_id = 'TaskId1' FOR UPDATE");
+            statement.executeQuery("SELECT * FROM " + TABLE_NAME + " WHERE task_id = 'TaskId1' FOR UPDATE");
 
 
             assertThat(sqlRunner.acquireLock()).isEqualTo(LOCK_RESULT_LOCKED_BY_ANOTHER_TASK);
@@ -211,9 +209,9 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
 
-            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:00')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_id, creation_time) VALUES ('TaskId1', TIMESTAMP '2000-01-01 00:00:00')");
             connection.commit();
             EntryRemovalResult result = sqlRunner.removeLockEntry();
 
@@ -231,9 +229,9 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
 
         try (final Connection connection = dataSource.getConnection();
              final Statement statement = connection.createStatement();
-             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
+             final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.SYSTEM_DEFAULT))) {
 
-            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_name, task_id, creation_time) VALUES ('TaskName1', 'TaskId1', TIMESTAMP '2000-01-01 00:00:00')");
+            statement.executeUpdate("INSERT INTO " + TABLE_NAME + "(task_id, creation_time) VALUES ('TaskId1', TIMESTAMP '2000-01-01 00:00:00')");
             connection.commit();
 
 
@@ -241,9 +239,8 @@ public abstract class AbstractSQLRunnerIT implements DatabaseIT {
         }
     }
 
-    static SynchroTask<Void> getTestSynchroTask(String taskName, String taskId, LockTimeout lockTimeout) {
+    static SynchroTask<Void> getTestSynchroTask(String taskId, LockTimeout lockTimeout) {
         return SynchroTask.from(() -> {})
-                .withName(taskName)
                 .withId(taskId)
                 .withLockTimeout(lockTimeout)
                 .build();

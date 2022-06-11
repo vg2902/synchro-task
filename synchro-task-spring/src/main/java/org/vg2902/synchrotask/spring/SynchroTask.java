@@ -32,14 +32,14 @@ import static org.vg2902.synchrotask.core.api.LockTimeout.SYSTEM_DEFAULT_TIMEOUT
  * The framework will wrap the method invocations in individual {@link org.vg2902.synchrotask.core.api.SynchroTask}
  * instances and execute them with an eligible {@link SynchroTaskService} bean.
  * <p>
- * The annotated method must have two arguments with {@link TaskName} and {@link TaskId} annotations respectively
- * to designate the parameters that should be used as the <b>taskName</b> and <b>taskId</b>:
+ * The annotated method must have a {@link TaskId}-annotated argument to designate the parameter that should be used
+ * as the <b>taskId</b>:
  * <pre>
  * &#64;Component
  * public class SynchroTaskRunner {
  *
  *      &#64;SynchroTask
- *      public Integer defaultTask(@TaskName String taskName, @TaskId long taskId) {
+ *      public Integer defaultTask(@TaskId String taskId) {
  *          return 42;
  *      }
  *
@@ -50,7 +50,6 @@ import static org.vg2902.synchrotask.core.api.LockTimeout.SYSTEM_DEFAULT_TIMEOUT
  * @see EnableSynchroTask
  * @see org.vg2902.synchrotask.core.api.SynchroTask
  * @see TaskId
- * @see TaskName
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

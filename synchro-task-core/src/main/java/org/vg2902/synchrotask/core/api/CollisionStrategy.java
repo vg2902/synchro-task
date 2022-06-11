@@ -19,7 +19,7 @@ import org.vg2902.synchrotask.core.exception.SynchroTaskCollisionException;
 
 /**
  * Defines {@link SynchroTask} behaviour in case of collisions, i.e., when a task cannot start
- * because another {@link SynchroTask} instance with the same <b>taskName</b> and <b>taskId</b> is already executing.
+ * because another {@link SynchroTask} instance with the same <b>taskId</b> is already executing.
  *
  * @deprecated This class is a part of deprecated API and will be removed in the following releases.
  * Use {@link LockTimeout} instead to control {@link SynchroTask} behaviour.

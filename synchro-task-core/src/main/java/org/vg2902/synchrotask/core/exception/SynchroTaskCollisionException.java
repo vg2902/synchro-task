@@ -22,7 +22,7 @@ import org.vg2902.synchrotask.core.api.SynchroTaskService;
 
 /**
  * Indicates a <b>collision</b>, i.e., an attempt to run a {@link SynchroTask} while another instance with the same
- * <b>taskName</b> and <b>taskId</b> is still running.
+ * <b>taskId</b> is still running.
  * @see SynchroTaskService#run(SynchroTask)
  */
 @AllArgsConstructor

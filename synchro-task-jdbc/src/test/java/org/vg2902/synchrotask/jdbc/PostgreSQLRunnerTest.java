@@ -48,7 +48,7 @@ public class PostgreSQLRunnerTest {
     private final ResultSet selectForUpdateResult = mock(ResultSet.class);
     private final ResultSet selectForUpdateNoWaitResult = mock(ResultSet.class);
 
-    private static final String selectForUpdateQuery = "SELECT task_name, task_id FROM " + TABLE_NAME + " WHERE task_name = ? AND task_id = ? FOR UPDATE";
+    private static final String selectForUpdateQuery = "SELECT task_id FROM " + TABLE_NAME + " WHERE task_id = ? FOR UPDATE";
     private static final String selectForUpdateNoWaitQuery = selectForUpdateQuery + " NOWAIT";
     private static final String getLockTimeoutQuery = "SHOW lock_timeout";
 
@@ -83,7 +83,7 @@ public class PostgreSQLRunnerTest {
         PreparedStatement updateLockTimeoutStatement1 = mockUpdateLockTimeout(2147483647);
         PreparedStatement updateLockTimeoutStatement2 = mockUpdateLockTimeout(currentTimeoutInMillis);
 
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.MAX_SUPPORTED));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.MAX_SUPPORTED));
         sqlRunner.acquireLock();
 
         verify(updateLockTimeoutStatement1).executeUpdate();
@@ -98,7 +98,7 @@ public class PostgreSQLRunnerTest {
         PreparedStatement updateLockTimeoutStatement1 = mockUpdateLockTimeout(0);
         PreparedStatement updateLockTimeoutStatement2 = mockUpdateLockTimeout(currentTimeoutInMillis);
 
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.of(0)));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.of(0)));
         sqlRunner.acquireLock();
 
         verify(updateLockTimeoutStatement1).executeUpdate();
@@ -113,7 +113,7 @@ public class PostgreSQLRunnerTest {
         PreparedStatement updateLockTimeoutStatement1 = mockUpdateLockTimeout(10000);
         PreparedStatement updateLockTimeoutStatement2 = mockUpdateLockTimeout(currentTimeoutInMillis);
 
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.of(10000L)));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.of(10000L)));
         sqlRunner.acquireLock();
 
         verify(updateLockTimeoutStatement1).executeUpdate();
@@ -123,7 +123,7 @@ public class PostgreSQLRunnerTest {
 
     @Test
     public void doesNotUpdateLockTimeout() throws SQLException {
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.SYSTEM_DEFAULT));
         sqlRunner.acquireLock();
         verify(connection, never()).prepareStatement(argThat(query -> query.toLowerCase().contains("lock_timeout")));
     }

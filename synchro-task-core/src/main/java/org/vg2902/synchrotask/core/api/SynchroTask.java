@@ -28,12 +28,11 @@ import static java.util.Objects.requireNonNull;
 /**
  * Represents a unit of work which requires synchronization while executing.
  * <p>
- * Each SynchroTask is uniquely identified by a combination of {@link #taskName} and {@link #taskId}.
+ * Each SynchroTask is uniquely identified by {@link #taskId}.
  * Once initiated and until completed, a SynchroTask instance will prevent other instances
- * with the same {@link #taskName} and {@link #taskId} from being launched in parallel.
- * An attempt to start such an instance will cause a <b>collision</b> and will be rejected.
- * In other words, {@link SynchroTask} instance <b>acquires</b>/<b>releases</b> a <b>lock</b>
- * upon start/completion respectively.
+ * with the same {@link #taskId} from being launched in parallel. An attempt to start such an instance will cause
+ * a <b>collision</b> and will be rejected. In other words, {@link SynchroTask} instance <b>acquires</b>/<b>releases</b>
+ * a <b>lock</b> upon start/completion respectively.
  * <p>
  * {@link #lockTimeout} attribute can be used to control how long a blocked task should wait if it is blocked.
  * When not specified, the task will be using {@link LockTimeout#SYSTEM_DEFAULT_TIMEOUT}. See {@link LockTimeout}
@@ -48,23 +47,21 @@ import static java.util.Objects.requireNonNull;
  * There are static builder methods to construct {@link SynchroTask} objects:
  *
  * <pre>
- *    // A task with name <b>bar</b> and id <b>42</b> with no return value, throwing the exception after 10s timeout
+ *    // A task with and id <b>bar</b> with no return value, throwing the exception after 10s timeout
  *
  *    SynchroTask&lt;Void&gt; synchroTask = SynchroTask
  *            .from(() -&gt; System.out.println("foo"))
- *            .withName("bar")
- *            .withId("42")
+ *            .withId("bar")
  *            .withLockTimeout(10000)
  *            .throwExceptionAfterTimeout(true)
  *            .build();
  * </pre>
  * <pre>
- *    // A task with name <b>bar</b> and id <b>42</b> with {@link String} return type and the max timeout supported by the lock provider
+ *    // A task with id <b>bar</b> with {@link String} return type and the max timeout supported by the lock provider
  *
  *    SynchroTask&lt;String&gt; synchroTask = SynchroTask
  *            .from(() -&gt; "foo")
- *            .withName("bar")
- *            .withId("42")
+ *            .withId("bar")
  *            .withLockTimeout(LockTimeout.MAX_SUPPORTED)
  *            .build();
  * </pre>
@@ -82,21 +79,16 @@ import static java.util.Objects.requireNonNull;
 public class SynchroTask<T> {
 
     private SynchroTask(Supplier<T> task,
-                        String taskName,
                         String taskId,
                         LockTimeout lockTimeout,
                         boolean throwExceptionAfterTimeout) {
         this.task = requireNonNull(task);
-        this.taskName = requireNonNull(taskName);
         this.taskId = requireNonNull(taskId);
         this.lockTimeout = requireNonNull(lockTimeout);
         this.throwExceptionAfterTimeout = throwExceptionAfterTimeout;
     }
 
     private final Supplier<T> task;
-
-    @ToString.Include
-    private final String taskName;
 
     @ToString.Include
     private final String taskId;
@@ -123,7 +115,6 @@ public class SynchroTask<T> {
     public static final class SynchroTaskBuilder<T> {
 
         private Supplier<T> task;
-        private String taskName;
         private String taskId;
         private LockTimeout lockTimeout = LockTimeout.SYSTEM_DEFAULT;
         private boolean throwExceptionAfterTimeout = true;
@@ -144,11 +135,6 @@ public class SynchroTask<T> {
             };
 
             return builder;
-        }
-
-        public SynchroTaskBuilder<T> withName(String taskName) {
-            this.taskName = requireNonNull(taskName);
-            return this;
         }
 
         public SynchroTaskBuilder<T> withId(String taskId) {
@@ -216,7 +202,7 @@ public class SynchroTask<T> {
         }
 
         public SynchroTask<T> build() {
-            return new SynchroTask<>(task, taskName, taskId, lockTimeout, throwExceptionAfterTimeout);
+            return new SynchroTask<>(task, taskId, lockTimeout, throwExceptionAfterTimeout);
         }
     }
 }

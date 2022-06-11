@@ -31,9 +31,7 @@ import java.util.Properties;
  * <ul>
  *     <li>
  *         using Docker via <a href=https://www.testcontainers.org/modules/databases/postgres/>TestContainers</a> based on
- *         <a href=https://hub.docker.com/_/postgres>Postgres</a> image.
- *         Note, that the image size is about 70Mb, so when you run it for the first time,
- *         it may take a while for Docker to download it.
+ *         <a href=https://hub.docker.com/_/postgres>Postgres</a> image;
  *     </li>
  *     <li>using external Postgres database instance;</li>
  * </ul>

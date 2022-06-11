@@ -28,7 +28,6 @@ import org.vg2902.synchrotask.core.api.SynchroTaskService;
 import org.vg2902.synchrotask.core.utils.ThrowableTaskResult;
 import org.vg2902.synchrotask.core.utils.ThrowableTaskUtils;
 import org.vg2902.synchrotask.spring.TaskId;
-import org.vg2902.synchrotask.spring.TaskName;
 
 import java.lang.reflect.Method;
 
@@ -46,7 +45,7 @@ class SynchroTaskAdvice implements MethodInterceptor {
     /**
      * ApplicationContext.getBean(Class aClass) method doesn't work properly in Spring versions before 3.1,
      * if there are more than one bean of the same type, even if one of them is annotated with @Primary.
-     *
+     * <p>
      * This is a workaround to identify the primary bean.
      */
     @Autowired(required = false)
@@ -71,15 +70,11 @@ class SynchroTaskAdvice implements MethodInterceptor {
         SynchroTaskService service = getServiceBean(serviceName);
         log.debug("SynchroTaskService bean: {}", service);
 
-        Object taskName = SynchroTaskAopUtils.getAnnotatedArgValue(methodInvocation, TaskName.class);
-        log.debug("taskName value in SynchroTaskAdvice: {}", taskName);
-
         Object taskId = SynchroTaskAopUtils.getAnnotatedArgValue(methodInvocation, TaskId.class);
         log.debug("taskId value in SynchroTaskAdvice: {}", taskId);
 
         SynchroTaskBuilder<ThrowableTaskResult<Object>> builder = SynchroTask
                 .from(ThrowableTaskUtils.getSupplier(methodInvocation::proceed))
-                .withName(String.valueOf(taskName))
                 .withId(String.valueOf(taskId));
 
         if (lockTimeout != SYSTEM_DEFAULT || !throwExceptionAfterTimeout) {

@@ -51,8 +51,8 @@ public class MySQLRunnerTest {
     private final PreparedStatement updateLockTimeoutStatement1 = mock(PreparedStatement.class);
     private final PreparedStatement updateLockTimeoutStatement2 = mock(PreparedStatement.class);
 
-    private static final String selectForUpdateQuery = "SELECT task_name, task_id FROM " + TABLE_NAME + " WHERE task_name = ? AND task_id = ? FOR UPDATE";
-    private static final String selectForUpdateNoWaitQuery = "SELECT task_name, task_id FROM " + TABLE_NAME + " WHERE task_name = ? AND task_id = ? FOR UPDATE NOWAIT";
+    private static final String selectForUpdateQuery = "SELECT task_id FROM " + TABLE_NAME + " WHERE task_id = ? FOR UPDATE";
+    private static final String selectForUpdateNoWaitQuery = "SELECT task_id FROM " + TABLE_NAME + " WHERE task_id = ? FOR UPDATE NOWAIT";
     private static final String getLockTimeoutQuery = "SELECT @@SESSION.innodb_lock_wait_timeout";
     private static final String updateLockTimeoutQuery = "SET @@SESSION.innodb_lock_wait_timeout = ?";
 
@@ -91,7 +91,7 @@ public class MySQLRunnerTest {
         int currentTimeoutInMillis = 1000;
         when(lockTimeoutResult.getInt(1)).thenReturn(currentTimeoutInMillis);
 
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.MAX_SUPPORTED));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.MAX_SUPPORTED));
         sqlRunner.acquireLock();
 
         verify(connection, times(2)).prepareStatement(updateLockTimeoutQuery);
@@ -109,7 +109,7 @@ public class MySQLRunnerTest {
         int currentTimeoutInMillis = 1000;
         when(lockTimeoutResult.getInt(1)).thenReturn(currentTimeoutInMillis);
 
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.of(0)));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.of(0)));
         sqlRunner.acquireLock();
 
         verify(connection, times(2)).prepareStatement(updateLockTimeoutQuery);
@@ -127,7 +127,7 @@ public class MySQLRunnerTest {
         int currentTimeoutInSeconds = 50;
         when(lockTimeoutResult.getInt(1)).thenReturn(currentTimeoutInSeconds);
 
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.of(10000L)));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.of(10000L)));
         sqlRunner.acquireLock();
 
         verify(connection, times(2)).prepareStatement(updateLockTimeoutQuery);
@@ -142,7 +142,7 @@ public class MySQLRunnerTest {
 
     @Test
     public void doesNotUpdateLockTimeout() throws SQLException {
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.SYSTEM_DEFAULT));
         sqlRunner.acquireLock();
         verify(connection, never()).prepareStatement(argThat(query -> query.toLowerCase().contains("innodb_lock_wait_timeout")));
     }

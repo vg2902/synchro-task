@@ -149,8 +149,7 @@ public class SynchroTaskJdbcLockManagerTest {
     private SynchroTask<?> getDummyTask(CollisionStrategy collisionStrategy) {
         return SynchroTask
                 .from(() -> {})
-                .withName("DummyTask")
-                .withId("42")
+                .withId("DummyTask")
                 .onLock(collisionStrategy)
                 .build();
     }

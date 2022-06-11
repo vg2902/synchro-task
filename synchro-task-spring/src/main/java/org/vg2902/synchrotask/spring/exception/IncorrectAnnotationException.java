@@ -20,8 +20,8 @@ import lombok.ToString;
 import org.vg2902.synchrotask.core.exception.SynchroTaskException;
 
 /**
- * Indicates incorrect usage of {@link org.vg2902.synchrotask.spring.TaskName}
- * or {@link org.vg2902.synchrotask.spring.TaskId} annotations.
+ * Indicates incorrect usage of {@link org.vg2902.synchrotask.spring.TaskId} annotation.
+ *
  * @see org.vg2902.synchrotask.spring.SynchroTask
  */
 @EqualsAndHashCode(callSuper = false)

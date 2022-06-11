@@ -36,18 +36,16 @@ import static java.util.Objects.requireNonNull;
  * The SQL below gives an example of such a table:
  * <pre>
  *  CREATE TABLE synchro_task(
- *        task_name         VARCHAR2(100 CHAR) NOT NULL
- *      , task_id           VARCHAR2(100 CHAR) NOT NULL
+ *        task_id           VARCHAR2(100 CHAR) NOT NULL
  *      , creation_time     TIMESTAMP(9)
- *      , CONSTRAINT synchro_task_pk PRIMARY KEY (task_name, task_id));
+ *      , CONSTRAINT synchro_task_pk PRIMARY KEY (task_id));
  * </pre>
  * The table <b>must</b> have:
  * <ul>
- *  <li>all three columns with exactly the same names and data types as they are defined above;</li>
- *  <li>a composite primary key based on <b>taskName</b> and <b>taskId</b>;</li>
+ *  <li>the two columns with exactly the same names and data types as they are defined above;</li>
+ *  <li>a primary key based on <b>taskId</b>;</li>
  * </ul>
- * Column size, however, is not limited and can vary. Just make sure that <b>taskName</b> and <b>taskId</b> columns
- * are wide enough to fit anticipated values.
+ * Column size, however, is not limited and can vary. Just make sure that <b>taskId</b> is wide enough to fit anticipated values.
  * <p>
  * By default, the service expects the table to be named <b>SYNCHRO_TASK</b>, but it can be overridden
  * during initialization, see the builder use cases below.
@@ -117,7 +115,7 @@ public final class SynchroTaskJdbcService implements SynchroTaskService {
      * the registry table to keep track of running tasks and ensure synchronization.
      * <br>
      * Prior to the <b>task</b> executing, it will try to create and immediately lock a "control" row
-     * in the registry table with the given task <b>taskName</b> and <b>taskId</b>.
+     * in the registry table with the given <b>taskId</b>.
      * <p>
      * If the row already exists and is unlocked, then the service will try to reuse it.
      * <p>

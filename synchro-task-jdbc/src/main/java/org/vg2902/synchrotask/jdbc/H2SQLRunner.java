@@ -71,9 +71,9 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
     H2SQLRunner(DataSource datasource, String tableName, SynchroTask<T> task) throws SQLException {
         super(datasource, tableName, task);
 
-        insertQuery = "INSERT INTO " + tableName + "(task_name, task_id, creation_time) VALUES (?, ?, ?)";
-        selectForUpdateQuery = "SELECT task_name, task_id FROM " + tableName + " WHERE task_name = ? AND task_id = ? FOR UPDATE";
-        deleteQuery = "DELETE FROM " + tableName + " WHERE task_name = ? AND task_id = ?";
+        insertQuery = "INSERT INTO " + tableName + "(task_id, creation_time) VALUES (?, ?)";
+        selectForUpdateQuery = "SELECT task_id FROM " + tableName + " WHERE task_id = ? FOR UPDATE";
+        deleteQuery = "DELETE FROM " + tableName + " WHERE task_id = ?";
         getLockTimeoutQuery = "CALL LOCK_TIMEOUT()";
         updateLockTimeoutQuery = "SET LOCK_TIMEOUT ?";
     }
@@ -102,9 +102,8 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
         log.debug(insertQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(insertQuery)) {
-            stmt.setString(1, task.getTaskName());
-            stmt.setString(2, task.getTaskId());
-            stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setString(1, task.getTaskId());
+            stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
 
             stmt.executeUpdate();
 
@@ -169,8 +168,7 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
         log.debug(selectForUpdateQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(selectForUpdateQuery)) {
-            stmt.setString(1, super.task.getTaskName());
-            stmt.setString(2, super.task.getTaskId());
+            stmt.setString(1, super.task.getTaskId());
 
             ResultSet resultSet = stmt.executeQuery();
 
@@ -217,8 +215,7 @@ final class H2SQLRunner<T> extends AbstractSQLRunner<T> {
         log.debug(deleteQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(deleteQuery)) {
-            stmt.setString(1, task.getTaskName());
-            stmt.setString(2, task.getTaskId());
+            stmt.setString(1, task.getTaskId());
 
             int cnt = stmt.executeUpdate();
 

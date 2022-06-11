@@ -74,10 +74,10 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
     MySQLRunner(DataSource datasource, String tableName, SynchroTask<T> task) throws SQLException {
         super(datasource, tableName, task);
 
-        insertQuery = "INSERT INTO " + tableName + "(task_name, task_id, creation_time) VALUES (?, ?, ?)";
-        selectForUpdateQuery = "SELECT task_name, task_id FROM " + tableName + " WHERE task_name = ? AND task_id = ? FOR UPDATE";
+        insertQuery = "INSERT INTO " + tableName + "(task_id, creation_time) VALUES (?, ?)";
+        selectForUpdateQuery = "SELECT task_id FROM " + tableName + " WHERE task_id = ? FOR UPDATE";
         selectForUpdateNoWaitQuery = selectForUpdateQuery + " NOWAIT";
-        deleteQuery = "DELETE FROM " + tableName + " WHERE task_name = ? AND task_id = ?";
+        deleteQuery = "DELETE FROM " + tableName + " WHERE task_id = ?";
         getLockTimeoutQuery = "SELECT @@SESSION.innodb_lock_wait_timeout";
         updateLockTimeoutQuery = "SET @@SESSION.innodb_lock_wait_timeout = ?";
     }
@@ -118,9 +118,8 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
         log.debug(insertQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(insertQuery)) {
-            stmt.setString(1, task.getTaskName());
-            stmt.setString(2, task.getTaskId());
-            stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setString(1, task.getTaskId());
+            stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
 
             stmt.executeUpdate();
 
@@ -188,8 +187,7 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
         log.debug(sql);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(sql)) {
-            stmt.setString(1, task.getTaskName());
-            stmt.setString(2, task.getTaskId());
+            stmt.setString(1, task.getTaskId());
 
             ResultSet resultSet = stmt.executeQuery();
 
@@ -236,8 +234,7 @@ final class MySQLRunner<T> extends AbstractSQLRunner<T> {
         log.debug(deleteQuery);
 
         try (PreparedStatement stmt = super.connection.prepareStatement(deleteQuery)) {
-            stmt.setString(1, String.valueOf(task.getTaskName()));
-            stmt.setString(2, String.valueOf(task.getTaskId()));
+            stmt.setString(1, String.valueOf(task.getTaskId()));
 
             int cnt = stmt.executeUpdate();
 

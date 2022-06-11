@@ -20,26 +20,10 @@ public class IncorrectlyAnnotatedSynchroTasks {
     private IncorrectlyAnnotatedSynchroTasks() {
     }
 
-    public static class SynchroTaskWithoutTaskName {
-
-        @SynchroTask
-        public void task(String taskName, @TaskId int taskId) {
-            // noop
-        }
-    }
-
     public static class SynchroTaskWithoutTaskId {
 
         @SynchroTask
-        public void task(@TaskName String taskName, int taskId) {
-            // noop
-        }
-    }
-
-    public static class SynchroTaskWithMultipleTaskName {
-
-        @SynchroTask
-        public void task(@TaskName String taskName1, @TaskName String taskName2, @TaskId int taskId) {
+        public void task(int taskId) {
             // noop
         }
     }
@@ -47,7 +31,7 @@ public class IncorrectlyAnnotatedSynchroTasks {
     public static class SynchroTaskWithMultipleTaskId {
 
         @SynchroTask
-        public void task(@TaskName String taskName, @TaskId String taskId1, @TaskId int taskId2) {
+        public void task(@TaskId String taskId1, @TaskId int taskId2) {
             // noop
         }
     }

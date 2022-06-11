@@ -47,9 +47,9 @@ public class OracleSQLRunnerTest {
 
     private static final int waitTime = 10;
 
-    private static final String selectForUpdateQuery = "SELECT task_name, task_id FROM " + TABLE_NAME + " WHERE task_name = ? AND task_id = ? FOR UPDATE";
-    private static final String selectForUpdateWaitQuery = "SELECT task_name, task_id FROM " + TABLE_NAME + " WHERE task_name = ? AND task_id = ? FOR UPDATE WAIT " + waitTime;
-    private static final String selectForUpdateNoWaitQuery = "SELECT task_name, task_id FROM " + TABLE_NAME + " WHERE task_name = ? AND task_id = ? FOR UPDATE NOWAIT";
+    private static final String selectForUpdateQuery = "SELECT task_id FROM " + TABLE_NAME + " WHERE task_id = ? FOR UPDATE";
+    private static final String selectForUpdateWaitQuery = "SELECT task_id FROM " + TABLE_NAME + " WHERE task_id = ? FOR UPDATE WAIT " + waitTime;
+    private static final String selectForUpdateNoWaitQuery = "SELECT task_id FROM " + TABLE_NAME + " WHERE task_id = ? FOR UPDATE NOWAIT";
 
     @Before
     public void init() throws SQLException {
@@ -77,7 +77,7 @@ public class OracleSQLRunnerTest {
 
     @Test
     public void setsMaxSupportedLockTimeout() throws SQLException {
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.MAX_SUPPORTED));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.MAX_SUPPORTED));
         sqlRunner.acquireLock();
 
         verify(selectForUpdateResult).next();
@@ -85,7 +85,7 @@ public class OracleSQLRunnerTest {
 
     @Test
     public void setsZeroLockTimeout() throws SQLException {
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.of(0)));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.of(0)));
         sqlRunner.acquireLock();
 
         verify(selectForUpdateNoWaitResult).next();
@@ -93,7 +93,7 @@ public class OracleSQLRunnerTest {
 
     @Test
     public void setsCustomLockTimeout() throws SQLException {
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.of(10000L)));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.of(10000L)));
         sqlRunner.acquireLock();
 
         verify(selectForUpdateWaitResult).next();

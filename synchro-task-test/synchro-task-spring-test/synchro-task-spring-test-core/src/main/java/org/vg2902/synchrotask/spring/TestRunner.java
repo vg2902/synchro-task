@@ -26,66 +26,66 @@ import static org.vg2902.synchrotask.core.api.CollisionStrategy.WAIT;
 public class TestRunner {
 
     @SynchroTask(onLock = WAIT)
-    public String waitingTask(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("waitingTask", taskName, taskId);
+    public String waitingTask(@TaskId String taskId) {
+        return formatOutput("waitingTask", taskId);
     }
 
     @SynchroTask(onLock = THROW)
-    public String throwingTask(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("throwingTask", taskName, taskId);
+    public String throwingTask(@TaskId String taskId) {
+        return formatOutput("throwingTask", taskId);
     }
 
     @SynchroTask(onLock = RETURN)
-    public String returningTask(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("returningTask", taskName, taskId);
+    public String returningTask(@TaskId String taskId) {
+        return formatOutput("returningTask", taskId);
     }
 
     @SynchroTask
-    public String defaultTask(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("defaultTask", taskName, taskId);
+    public String defaultTask(@TaskId String taskId) {
+        return formatOutput("defaultTask", taskId);
     }
 
     @SynchroTask
-    public String failingTask(@TaskName String taskName, @TaskId String taskId) {
+    public String failingTask(@TaskId String taskId) {
         throw new TestException();
     }
 
     @SynchroTask(serviceName = "service1")
-    public String taskWithService1(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("defaultTaskWithService1", taskName, taskId);
+    public String taskWithService1(@TaskId String taskId) {
+        return formatOutput("defaultTaskWithService1", taskId);
     }
 
     @SynchroTask(serviceName = "service2")
-    public String taskWithService2(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("defaultTaskWithService2", taskName, taskId);
+    public String taskWithService2(@TaskId String taskId) {
+        return formatOutput("defaultTaskWithService2", taskId);
     }
 
     @SynchroTask(lockTimeout = 0)
-    public String noLockTimeoutTask(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("noLockTimeoutTask", taskName, taskId);
+    public String noLockTimeoutTask(@TaskId String taskId) {
+        return formatOutput("noLockTimeoutTask", taskId);
     }
 
     @SynchroTask(lockTimeout = LockTimeout.SYSTEM_DEFAULT_TIMEOUT)
-    public String defaultLockTimeoutTask(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("defaultLockTimeoutTask", taskName, taskId);
+    public String defaultLockTimeoutTask(@TaskId String taskId) {
+        return formatOutput("defaultLockTimeoutTask", taskId);
     }
 
     @SynchroTask(lockTimeout = LockTimeout.MAX_SUPPORTED_TIMEOUT)
-    public String maxSupportedLockTimeoutTask(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("maxSupportedLockTimeoutTask", taskName, taskId);
+    public String maxSupportedLockTimeoutTask(@TaskId String taskId) {
+        return formatOutput("maxSupportedLockTimeoutTask", taskId);
     }
 
     @SynchroTask(lockTimeout = LockTimeout.MAX_SUPPORTED_TIMEOUT, throwExceptionAfterTimeout = false)
-    public String returningTimeoutTask(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("returningTimeoutTask", taskName, taskId);
+    public String returningTimeoutTask(@TaskId String taskId) {
+        return formatOutput("returningTimeoutTask", taskId);
     }
 
     @SynchroTask(lockTimeout = 20000)
-    public String customLockTimeoutTask(@TaskName String taskName, @TaskId String taskId) {
-        return formatOutput("customLockTimeoutTask", taskName, taskId);
+    public String customLockTimeoutTask(@TaskId String taskId) {
+        return formatOutput("customLockTimeoutTask", taskId);
     }
 
-    private String formatOutput(String taskType, String taskName, String taskId) {
-        return String.join(":", taskType, taskName, taskId);
+    private String formatOutput(String taskType, String taskId) {
+        return String.join(":", taskType, taskId);
     }
 }

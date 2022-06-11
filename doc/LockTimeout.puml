@@ -1,23 +1,23 @@
 @startuml
 
-Instance1 -> LockProvider ++ #FFBBBB : lock [foo, bar]
+Instance1 -> LockProvider ++ #FFBBBB : lock [foo]
 activate Instance1
 LockProvider --> Instance1 : LOCK ACQUIRED
-Instance1 -> Instance1 ++: run <<SynchroTask[foo, bar]>>
+Instance1 -> Instance1 ++: run <<SynchroTask[foo]>>
 
-Instance2 ->x LockProvider: lock [foo, bar, lockTimeout=N ms]
+Instance2 ->x LockProvider: lock [foo, lockTimeout=N ms]
 activate Instance2
 LockProvider --> Instance2 : BUSY
 
-Instance1 -> LockProvider -- : unlock [foo, bar]
+Instance1 -> LockProvider -- : unlock [foo]
 LockProvider --> Instance1 -- : LOCK RELEASED
 deactivate Instance1
 
 LockProvider --> Instance2 : LOCK ACQUIRED
 activate LockProvider #FFBBBB
-Instance2 -> Instance2: run <<SynchroTask[foo, bar]>>
+Instance2 -> Instance2: run <<SynchroTask[foo]>>
 activate Instance2
-Instance2 -> LockProvider -- : unlock [foo, bar]
+Instance2 -> LockProvider -- : unlock [foo]
 LockProvider --> Instance2 -- : LOCK RELEASED
 deactivate Instance2
 

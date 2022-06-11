@@ -32,9 +32,7 @@ import java.util.Properties;
  * <ul>
  *     <li>
  *         using Docker via <a href=https://www.testcontainers.org/modules/databases/mysql/>TestContainers</a> based on
- *         <a href=https://hub.docker.com/_/mysql>MySQL</a> image.
- *         Note, that the image size is about 154Mb, so when you run it for the first time,
- *         it may take a while for Docker to download it.
+ *         <a href=https://hub.docker.com/_/mysql>MySQL</a> image;
  *     </li>
  *     <li>using external MySQL database instance;</li>
  * </ul>

@@ -51,7 +51,7 @@ public class H2SQLRunnerTest {
 
     private static final String getLockTimeoutQuery = "CALL LOCK_TIMEOUT()";
     private static final String updateLockTimeoutQuery = "SET LOCK_TIMEOUT ?";
-    private static final String selectForUpdateQuery = "SELECT task_name, task_id FROM " + TABLE_NAME + " WHERE task_name = ? AND task_id = ? FOR UPDATE";
+    private static final String selectForUpdateQuery = "SELECT task_id FROM " + TABLE_NAME + " WHERE task_id = ? FOR UPDATE";
 
     @Before
     public void init() throws SQLException {
@@ -84,7 +84,7 @@ public class H2SQLRunnerTest {
         int currentTimeoutInMillis = 1000;
         when(lockTimeoutResult.getInt(1)).thenReturn(currentTimeoutInMillis);
 
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.MAX_SUPPORTED));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.MAX_SUPPORTED));
         sqlRunner.acquireLock();
 
         verify(connection, times(2)).prepareStatement(updateLockTimeoutQuery);
@@ -102,7 +102,7 @@ public class H2SQLRunnerTest {
         int currentTimeoutInMillis = 1000;
         when(lockTimeoutResult.getInt(1)).thenReturn(currentTimeoutInMillis);
 
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.of(0)));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.of(0)));
         sqlRunner.acquireLock();
 
         verify(connection, times(2)).prepareStatement(updateLockTimeoutQuery);
@@ -120,7 +120,7 @@ public class H2SQLRunnerTest {
         int currentTimeoutInMillis = 1000;
         when(lockTimeoutResult.getInt(1)).thenReturn(currentTimeoutInMillis);
 
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.of(10000L)));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.of(10000L)));
         sqlRunner.acquireLock();
 
         verify(connection, times(2)).prepareStatement(updateLockTimeoutQuery);
@@ -135,7 +135,7 @@ public class H2SQLRunnerTest {
 
     @Test
     public void doesNotUpdateLockTimeout() throws SQLException {
-        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskName1", "TaskId1", LockTimeout.SYSTEM_DEFAULT));
+        final SQLRunner<Void> sqlRunner = SQLRunners.create(dataSource, TABLE_NAME, getTestSynchroTask("TaskId1", LockTimeout.SYSTEM_DEFAULT));
         sqlRunner.acquireLock();
         verify(connection, never()).prepareStatement(argThat(query -> query.toUpperCase().contains("LOCK_TIMEOUT")));
     }

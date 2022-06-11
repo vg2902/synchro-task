@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInvocation;
 import org.vg2902.synchrotask.spring.SynchroTask;
 import org.vg2902.synchrotask.spring.TaskId;
-import org.vg2902.synchrotask.spring.TaskName;
 import org.vg2902.synchrotask.spring.exception.IncorrectAnnotationException;
 
 import java.lang.annotation.Annotation;
@@ -47,9 +46,6 @@ class SynchroTaskAopUtils {
 
         int taskIdPosition = getAnnotatedArgPosition(method, targetClass, TaskId.class);
         log.debug("taskId parameter position is found: {}", taskIdPosition);
-
-        int taskNamePosition = getAnnotatedArgPosition(method, targetClass, TaskName.class);
-        log.debug("taskName parameter position is found: {}", taskNamePosition);
     }
 
     static <T extends Annotation> Object getAnnotatedArgValue(MethodInvocation methodInvocation, Class<T> argAnnotation) throws NoSuchMethodException {

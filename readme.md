@@ -43,10 +43,10 @@ work which requires synchronization while executing
 a service for running `SynchroTask` instances
 
 #### SynchroTask
-A **SynchroTask** is uniquely identified by a combination of **taskName** and **taskId**.
+A **SynchroTask** is uniquely identified by **taskId**.
 
 Once initiated and until completed, a **SynchroTask** instance will prevent other instances
-with the same **taskName** and **taskId** from being launched in parallel. 
+with the same **taskId** from being launched in parallel. 
 An attempt to start such an instance will be blocked according to the [**lock timeout**](#lock-timeout) settings.
 In other words, **SynchroTask** instance **acquires**/**releases** a **lock** upon start/completion respectively.
 
@@ -61,36 +61,14 @@ import org.vg2902.synchrotask.core.SynchroTask;
 
 SynchroTask<String> synchroTaskFromSupplier = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
-        .withId(42)
+        .withId("bar")
         .build();
 
 SynchroTask<Void> synchroTaskFromRunnable = SynchroTask
         .from(() -> System.out.println("foo"))
-        .withName("bar")
-        .withId(42)
+        .withId("bar")
         .build();
 ```
-
-Technically, **taskName** and **taskId** don't bear any special meaning, and both are treated by the framework just as 
-parts of a composite unique key. How you define them is a matter of your naming convention, however, the general 
-guideline is to use **taskName** to designate a group of similar tasks, and **taskId** to distinguish individual 
-instances within a group. Here are some examples: 
-
-| taskName       | taskId               |
-| -------------- | ---------------------|
-| "tableExport"  | "ORDERS_20201229"    |
-| "tableExport"  | "ORDERS_20201230"    |
-| "tableExport"  | "INVENTORY_20201231" |
-| "emailSender"  | "20201231 1800"      |
-| "emailSender"  | "20201231 1900"      |
-| "emailSender"  | "20201231 2000"      |
-| "editDocument" | "attachment2.docx"   |
-| "editDocument" | "attachment3.xlsx"   |
-
-Although **taskName** and **taskId** can be objects of any type, all `SynchroTaskService` implementations 
-will internally convert them into `String` using `String.valueOf(Object)`. 
-These `String` representations will be actually passed into external lock providers.
 
 #### SynchroTaskService
 `SynchroTaskService` executes `SynchroTask`s. `run(SynchroTask)` method takes a `SynchroTask` and does all the
@@ -115,9 +93,8 @@ import org.vg2902.synchrotask.core.SynchroTask;
 
 SynchroTask<String> synchroTaskWithLockTimeout = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .withLockTimeout(60000)
-        .withId(42)
         .build();
 ```
 
@@ -130,9 +107,8 @@ import org.vg2902.synchrotask.core.SynchroTask;
 
 SynchroTask<String> synchroTaskWithZeroLockTimeout = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .withZeroLockTimeout()
-        .withId(42)
         .build();
 ```
 
@@ -149,9 +125,8 @@ import org.vg2902.synchrotask.core.SynchroTask;
 
 SynchroTask<String> synchroTaskWithMaxSupportedLockTimeout = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .withMaxSupportedLockTimeout()
-        .withId(42)
         .build();
 ```
 
@@ -170,15 +145,13 @@ import org.vg2902.synchrotask.core.SynchroTask;
 
 SynchroTask<String> synchroTaskWithDefaultTimeout1 = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .withDefaultLockTimeout()
-        .withId(42)
         .build();
 
 SynchroTask<String> synchroTaskWithDefaultTimeout2 = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
-        .withId(42)
+        .withId("bar")
         .build();
 ```
 
@@ -203,10 +176,9 @@ import org.vg2902.synchrotask.core.SynchroTask;
 
 SynchroTask<String> synchroTaskWithDefaultTimeout1 = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .withLockTimeout(10000)
         .throwExceptionAfterTimeout(false)
-        .withId(42)
         .build();
 ```
 
@@ -228,16 +200,14 @@ import org.vg2902.synchrotask.core.SynchroTask;
         
 SynchroTask<String> throwingSynchroTask1 = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .onLock(CollisionStrategy.THROW) //deprecated
-        .withId(42)
         .build();
 
 SynchroTask<String> throwingSynchroTask2 = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .withZeroLockTimeout() // preferred
-        .withId(42)
         .build();
 ```
 
@@ -250,17 +220,15 @@ import org.vg2902.synchrotask.core.SynchroTask;
 
 SynchroTask<String> returningSynchroTask1 = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .onLock(CollisionStrategy.RETURN) //deprecated
-        .withId(42)
         .build();
 
 SynchroTask<String> returningSynchroTask2 = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .withZeroLockTimeout()             // preferred
         .throwExceptionAfterTimeout(false) // preferred
-        .withId(42)
         .build();
 ```
 
@@ -273,16 +241,14 @@ import org.vg2902.synchrotask.core.SynchroTask;
 
 SynchroTask<String> returningSynchroTask1 = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .onLock(CollisionStrategy.WAIT) //deprecated
-        .withId(42)
         .build();
 
 SynchroTask<String> returningSynchroTask2 = SynchroTask
         .from(() -> "foo")
-        .withName("bar")
+        .withId("bar")
         .withDefaultLockTimeout() // preferred
-        .withId(42)
         .build();
 ```
 
@@ -295,51 +261,47 @@ You can use the SQL below to create it:
 #### H2
 ```iso92-sql
 CREATE TABLE synchro_task(
-  task_name         VARCHAR2(100 CHAR) NOT NULL
-, task_id           VARCHAR2(100 CHAR) NOT NULL
+  task_id           VARCHAR2(100 CHAR) NOT NULL
 , creation_time     TIMESTAMP(9)
-, CONSTRAINT synchro_task_pk PRIMARY KEY (task_name, task_id));
+, CONSTRAINT synchro_task_pk PRIMARY KEY (task_id));
 ```
 
 #### MySQL
 ```iso92-sql
 CREATE TABLE synchro_task(
-  task_name         VARCHAR(100) NOT NULL
-, task_id           VARCHAR(100) NOT NULL
+  task_id           VARCHAR(100) NOT NULL
 , creation_time     TIMESTAMP(6)
-, CONSTRAINT synchro_task_pk PRIMARY KEY (task_name, task_id));
+, CONSTRAINT synchro_task_pk PRIMARY KEY (task_id));
 ```
 
 #### Oracle
 ```iso92-sql
 CREATE TABLE synchro_task(
-  task_name         VARCHAR2(100 CHAR) NOT NULL
-, task_id           VARCHAR2(100 CHAR) NOT NULL
+  task_id           VARCHAR2(100 CHAR) NOT NULL
 , creation_time     TIMESTAMP(9)
-, CONSTRAINT synchro_task_pk PRIMARY KEY (task_name, task_id));
+, CONSTRAINT synchro_task_pk PRIMARY KEY (task_id));
 ```
 
 #### PostgreSQL
 ```iso92-sql
 CREATE TABLE synchro_task(
-  task_name         VARCHAR(100) NOT NULL
-, task_id           VARCHAR(100) NOT NULL
+  task_id           VARCHAR(100) NOT NULL
 , creation_time     TIMESTAMP(6)
-, CONSTRAINT synchro_task_pk PRIMARY KEY (task_name, task_id));
+, CONSTRAINT synchro_task_pk PRIMARY KEY (task_id));
 ```
 
 The table must have:
 * all three columns with exactly the same names and data types as they are defined above
-* a composite primary key based on **task_name** and **task_id** 
+* a primary key based on **task_id** 
 
-Column size, however, is not limited and can vary. Just make sure that **task_name** and **task_id** columns 
-are wide enough to fit anticipated values. By default, the service expects the table to be named **SYNCHRO_TASK**, 
-but it can be overridden during initialization.
+Column size, however, is not limited and can vary. Just make sure that **task_id** column 
+is wide enough to fit anticipated values. By default, the service expects the table to be named **SYNCHRO_TASK**, 
+but this can be overridden during initialization.
 
 `SynchroTaskJdbcService` requires `javax.sql.DataSource` for initialization. 
 Every invocation of `run(SynchroTask)` method first will obtain a new `Connection` from this `DataSource`. 
-This connection is then used to create and immediately lock the **control row** with the given **task_name** 
-and **task_id** in the **registry table**. 
+This connection is then used to create and immediately lock the **control row** with the given **task_id** in 
+the **registry table**. 
 
 If the row already exists and is unlocked, the service will try to reuse it. 
 If the row already exists and is locked by another database session, the given `SynchroTask` will be assumed 
@@ -380,7 +342,6 @@ SynchroTaskService service = SynchroTaskJdbcService
 SynchroTask<Void> noop = SynchroTask
         .from(() -> {})
         .withId("foo")
-        .withName("bar")
         .build();
 
 service.run(noop);
@@ -412,7 +373,6 @@ public void test(DataSource ds) {
     SynchroTask<Void> noop = SynchroTask
         .from(() -> {})
         .withId("foo")
-        .withName("bar")
         .build();
     
     service.run(noop);    
@@ -484,21 +444,19 @@ Then use `@SynchroTask` annotation to indicate a method that you want to run as 
 The framework will wrap the method invocations in individual `SynchroTask` instances 
 and execute them with an eligible `SynchroTaskService` bean.
 
-The method must have two arguments with `@TaskName` and `@TaskId` annotations respectively to designate 
-**taskName** and **taskId** of the resulting `SynchroTask` objects.
+The method must have a `@TaskId`-annotated method to designate **taskId** of the resulting `SynchroTask` objects.
 
 Note, that the object containing annotated methods has to be a Spring bean.
 
 ```java
 import org.vg2902.synchrotask.spring.SynchroTask;
 import org.vg2902.synchrotask.spring.TaskId;
-import org.vg2902.synchrotask.spring.TaskName;
 
 @Component
 public class SynchroTaskRunner { 
     
     @SynchroTask
-    public Integer defaultTask(@TaskName String taskName, @TaskId long taskId) {
+    public Integer defaultTask(@TaskId long taskId) {
         return 42;
     }
 
@@ -513,13 +471,12 @@ These can be overridden with `serviceName`, `lockTimeout` and `throwExceptionAft
 ```java
 import org.vg2902.synchrotask.spring.SynchroTask;
 import org.vg2902.synchrotask.spring.TaskId;
-import org.vg2902.synchrotask.spring.TaskName;
 
 @Component
 public class SynchroTaskRunner { 
     
     @SynchroTask(lockTimeout = 10000, throwExceptionAfterTimeout = false, serviceName = "jdbcSynchroTaskService")
-    public Integer throwingTask(@TaskName String taskName, @TaskId long taskId) {
+    public Integer throwingTask(@TaskId long taskId) {
         return 42;
     }
 

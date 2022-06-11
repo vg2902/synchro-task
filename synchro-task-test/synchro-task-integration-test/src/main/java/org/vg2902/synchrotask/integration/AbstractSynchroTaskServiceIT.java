@@ -55,8 +55,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask = SynchroTask
                 .from(() -> 42)
-                .withName("foo")
-                .withId("bar")
+                .withId("foo")
                 .build();
 
         assertThat(service.run(synchroTask)).isEqualTo(42);
@@ -70,8 +69,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask1 = SynchroTask
                 .from(waitingSupplier)
-                .withName("foo")
-                .withId("bar")
+                .withId("foo")
                 .build();
 
         executor.submit(() -> service.run(synchroTask1));
@@ -79,8 +77,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask2 = SynchroTask
                 .from(() -> 42)
-                .withName("foo")
-                .withId("bar")
+                .withId("foo")
                 .withLockTimeout(0)
                 .build();
 
@@ -103,8 +100,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask1 = SynchroTask
                 .from(waitingSupplier)
-                .withName("foo")
-                .withId("bar")
+                .withId("foo")
                 .build();
 
         executor.submit(() -> service.run(synchroTask1));
@@ -112,8 +108,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask2 = SynchroTask
                 .from(() -> 42)
-                .withName("foo")
-                .withId("bar")
+                .withId("foo")
                 .withLockTimeout(0)
                 .throwExceptionAfterTimeout(false)
                 .build();
@@ -136,8 +131,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask1 = SynchroTask
                 .from(waitingSupplier)
-                .withName("foo")
-                .withId("bar")
+                .withId("foo")
                 .build();
 
         executor.submit(() -> service.run(synchroTask1));
@@ -145,8 +139,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask2 = SynchroTask
                 .from(() -> 42)
-                .withName("foo")
-                .withId("baz")
+                .withId("bar")
                 .withLockTimeout(0)
                 .build();
 
@@ -167,8 +160,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask1 = SynchroTask
                 .from(waitingSupplier1)
-                .withName("foo")
-                .withId("bar")
+                .withId("foo")
                 .build();
 
         Future<Integer> future1 = executor.submit(() -> service.run(synchroTask1));
@@ -179,8 +171,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask2 = SynchroTask
                 .from(waitingSupplier2)
-                .withName("foo")
-                .withId("bar")
+                .withId("foo")
                 .withMaxSupportedLockTimeout()
                 .build();
 
@@ -213,8 +204,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask1 = SynchroTask
                 .from(waitingSupplier1)
-                .withName("foo")
-                .withId("bar")
+                .withId("foo")
                 .build();
 
         Future<Integer> future1 = executor.submit(() -> service.run(synchroTask1));
@@ -225,8 +215,7 @@ public abstract class AbstractSynchroTaskServiceIT {
 
         SynchroTask<Integer> synchroTask2 = SynchroTask
                 .from(waitingSupplier2)
-                .withName("foo")
-                .withId("bar")
+                .withId("foo")
                 .withLockTimeout(3000L)
                 .build();
 
