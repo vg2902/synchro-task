@@ -31,9 +31,7 @@ import java.util.Properties;
  * <ul>
  *     <li>
  *         using Docker via <a href=https://www.testcontainers.org/modules/databases/oraclexe/>TestContainers</a> based on
- *         <a href=https://hub.docker.com/r/oracleinanutshell/oracle-xe-11g>Oracle XE 11g</a> image.
- *         Note, that the image size is 2.13Gb, so when you run it for the first time,
- *         it may take a while for Docker to download it.
+ *         <a href=https://hub.docker.com/r/gvenzl/oracle-xe>Oracle XE</a> image;
  *     </li>
  *     <li>using external Oracle database instance;</li>
  * </ul>
@@ -58,6 +56,7 @@ public class OracleResource {
         String userName = datasourceProperties.getProperty("USER_NAME");
         String password = datasourceProperties.getProperty("PASSWORD");
         String driverName = datasourceProperties.getProperty("DRIVER_NAME");
+        String databaseName = datasourceProperties.getProperty("DATABASE_NAME");
 
         String url;
         boolean isExternalInstance = !datasourceProperties.getProperty("EXTERNAL_URL", "").trim().isEmpty();
@@ -71,6 +70,7 @@ public class OracleResource {
             String schemaSetupScript = datasourceProperties.getProperty("SCHEMA_SETUP_SCRIPT");
 
             oracle = new OracleContainer(imageName)
+                    .withDatabaseName(databaseName)
                     .withClasspathResourceMapping(databaseSetupScript, entryPointPath, BindMode.READ_ONLY)
                     .withUsername(userName)
                     .withPassword(password)
