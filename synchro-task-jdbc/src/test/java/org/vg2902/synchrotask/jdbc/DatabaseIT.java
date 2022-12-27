@@ -15,9 +15,6 @@
  */
 package org.vg2902.synchrotask.jdbc;
 
-import org.vg2902.synchrotask.core.api.LockTimeout;
-import org.vg2902.synchrotask.core.api.SynchroTask;
-
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;

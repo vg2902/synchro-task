@@ -48,6 +48,7 @@
     <modules>
         <module>synchro-task-core</module>
         <module>synchro-task-jdbc</module>
+        <module>synchro-task-redis</module>
         <module>synchro-task-spring</module>
         <module>synchro-task-test</module>
     </modules>
@@ -77,12 +78,6 @@
             <dependency>
                 <groupId>org.vg2902</groupId>
                 <artifactId>synchro-task-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.vg2902</groupId>
-                <artifactId>synchro-task-jdbc</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

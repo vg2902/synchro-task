@@ -22,6 +22,7 @@ and **SynchroTask** library is one of those agents.
   * [Collision strategy](#collision-strategy)
 * [Providers](#providers)
   * [JDBC](#jdbc)
+  * [Redis](#redis)
 * [Lock timeout defaults](#lock-timeout-defaults)
 * [Spring integration](#spring-integration)
 * [Logging](#logging)
@@ -390,16 +391,70 @@ The following databases are currently supported:
 * Oracle
 * PostgreSQL
 
+### Redis
+Redis support is implemented by `SynchroTaskRedisService`, which relies on [Redisson](https://github.com/redisson/redisson) client.
+First, add `redisson` dependency to your pom.xml:
+
+```xml
+<dependency>
+    <groupId>org.redisson</groupId>
+    <artifactId>redisson</artifactId>
+    <version>3.19.0</version>
+</dependency>
+```
+and initialize `RedissonClient` object required by `SynchroTaskRedisService`:
+
+```java
+import org.redisson.Redisson;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
+
+import org.vg2902.synchrotask.core.api.SynchroTask;
+import org.vg2902.synchrotask.core.api.SynchroTaskService;
+import org.vg2902.synchrotask.jdbc.SynchroTaskRedisService;
+
+...
+
+public void test() {
+    Config config = new Config();
+    config.useSingleServer().setAddress("redis://localhost:6379");
+    config.setLockWatchdogTimeout(30000);
+
+    RedissonClient redissonClient = Redisson.create(config);
+
+    SynchroTaskService service = SynchroTaskRedisService
+        .from(redissonClient)
+        .withInterceptor(this::intercept)
+        .build();
+
+    SynchroTask<Void> noop = SynchroTask
+        .from(() -> {})
+        .withId("foo")
+        .build();
+    
+    service.run(noop);    
+}
+
+public void intercept(SynchroTask<?> task, RLock rLock) {
+    // do something
+}
+```
+
+The snippet above shows how to initialize a `SynchroTaskRedisService` which uses a single-server Redis instance running on
+localhost at port 6379.
+
+Note how [Watchdog timeout](https://github.com/redisson/redisson/wiki/2.-Configuration#lockwatchdogtimeout) is specified
+in order to clean up the locks which are not released gracefully.
 
 ## Lock timeout defaults
 | Lock Provider type | Lock Provider name | Default lock timeout | Max supported lock timeout | Time unit    |
-| ------------------ | ------------------ | -------------------- | -------------------------- | ------------ |
+|--------------------|--------------------| -------------------- | -------------------------- |--------------|
 | JDBC               | H2                 | 1000                 | 4294967295                 | milliseconds |
 | JDBC               | MySQL              | 50                   | 1073741824                 | seconds      |
 | JDBC               | Oracle             | 0                    | N/A                        | N/A          |
 | JDBC               | PostgreSQL         | 0                    | 2147483647                 | milliseconds |
-
-
+| Redis              | Redis              | 0                    | 9223372036854775807        | seconds      |
 
 ## Spring integration
 With SynchroTask Spring extension, you don't need to construct your tasks manually - just tell Spring which methods should be running as 
