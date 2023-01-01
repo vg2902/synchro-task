@@ -27,6 +27,7 @@ and **SynchroTask** library is one of those agents.
 * [Spring integration](#spring-integration)
 * [Logging](#logging)
 * [Release notes](#release-notes)
+  * [0.4.0](#040)
   * [0.3.2](#032)
   * [0.3.1](#031)
   * [0.3.0](#030)
@@ -603,6 +604,9 @@ timeout twice.
 As a workaround, provide a halved lock timeout value
 
 ## Release notes
+### 0.4.0
+* Adding support for Redis
+* Discontinuing taskName attribute
 ### 0.3.2
 * Addressing vulnerabilities
   * https://github.com/advisories/GHSA-673j-qm5f-xpv8
