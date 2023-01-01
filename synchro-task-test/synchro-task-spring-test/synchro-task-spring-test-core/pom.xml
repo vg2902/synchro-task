@@ -5,7 +5,7 @@
     <parent>
         <artifactId>synchro-task-spring-test</artifactId>
         <groupId>org.vg2902</groupId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.4.0</version>
     </parent>
 
     <artifactId>synchro-task-spring-test-core</artifactId>
