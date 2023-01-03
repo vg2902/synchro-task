@@ -394,9 +394,15 @@ The following databases are currently supported:
 
 ### Redis
 Redis support is implemented by `SynchroTaskRedisService`, which relies on [Redisson](https://github.com/redisson/redisson) client.
-First, add `redisson` dependency to your pom.xml:
 
+#### Project dependencies
 ```xml
+<dependency>
+    <groupId>org.vg2902</groupId>
+    <artifactId>synchro-task-redis</artifactId>
+    <version>0.3.2</version>
+</dependency>
+
 <dependency>
     <groupId>org.redisson</groupId>
     <artifactId>redisson</artifactId>
