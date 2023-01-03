@@ -320,7 +320,7 @@ The `Connection` will always be closed before returning from the method.
 <dependency>
     <groupId>org.vg2902</groupId>
     <artifactId>synchro-task-jdbc</artifactId>
-    <version>0.3.2</version>
+    <version>0.4.0</version>
 </dependency>
 ```
 
@@ -400,7 +400,7 @@ Redis support is implemented by `SynchroTaskRedisService`, which relies on [Redi
 <dependency>
     <groupId>org.vg2902</groupId>
     <artifactId>synchro-task-redis</artifactId>
-    <version>0.3.2</version>
+    <version>0.4.0</version>
 </dependency>
 
 <dependency>
@@ -472,7 +472,7 @@ With SynchroTask Spring extension, you don't need to construct your tasks manual
 <dependency>
     <groupId>org.vg2902</groupId>
     <artifactId>synchro-task-spring</artifactId>
-    <version>0.3.2</version>
+    <version>0.4.0</version>
 </dependency>
 ```
 
