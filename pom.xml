@@ -67,7 +67,7 @@
         <awaitility.version>4.1.0</awaitility.version>
         <mockito.version>3.6.28</mockito.version>
 
-        <logback.version>1.3.5</logback.version>
+        <logback.version>1.3.12</logback.version>
 
         <spring.latest.version>5.3.14</spring.latest.version>
         <testcontainers.version>1.17.6</testcontainers.version>

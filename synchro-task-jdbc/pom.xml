@@ -15,7 +15,7 @@
         <synchro-task-jdbc.docker-test-location>none</synchro-task-jdbc.docker-test-location>
 
         <commons-dbcp2.version>2.9.0</commons-dbcp2.version>
-        <h2.version>2.1.214</h2.version>
+        <h2.version>2.2.220</h2.version>
         <mysql.version>8.0.30</mysql.version>
         <oracle.version>19.3.0.0</oracle.version>
         <postgresql.version>42.5.1</postgresql.version>
