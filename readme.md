@@ -19,7 +19,6 @@ and **SynchroTask** library is one of those agents.
   * [SynchroTask](#synchrotask)
   * [SynchroTaskService](#synchrotaskservice)
   * [Lock timeout](#lock-timeout) 
-  * [Collision strategy](#collision-strategy)
 * [Providers](#providers)
   * [JDBC](#jdbc)
   * [Redis](#redis)
@@ -47,7 +46,7 @@ a service for running `SynchroTask` instances
 #### SynchroTask
 A **SynchroTask** is uniquely identified by **taskId**.
 
-Once initiated and until completed, a **SynchroTask** instance will prevent other instances
+Once initiated and until completed, a **SynchroTask** instance prevents other instances
 with the same **taskId** from being launched in parallel. 
 An attempt to start such an instance will be blocked according to the [**lock timeout**](#lock-timeout) settings.
 In other words, **SynchroTask** instance **acquires**/**releases** a **lock** upon start/completion respectively.
@@ -158,7 +157,6 @@ SynchroTask<String> synchroTaskWithDefaultTimeout2 = SynchroTask
 ```
 
 See [Lock timeout defaults](#lock-timeout-defaults) for the supported lock providers default timeouts.
-
 
 ##### Timeout expiration
 
@@ -293,20 +291,20 @@ CREATE TABLE synchro_task(
 ```
 
 The table must have:
-* all three columns with exactly the same names and data types as they are defined above
-* a primary key based on **task_id** 
+* both columns with exactly the same names and data types as they are defined above
+* a primary key on **task_id** column 
 
 Column size, however, is not limited and can vary. Just make sure that **task_id** column 
 is wide enough to fit anticipated values. By default, the service expects the table to be named **SYNCHRO_TASK**, 
-but this can be overridden during initialization.
+but this can be overridden.
 
 `SynchroTaskJdbcService` requires `javax.sql.DataSource` for initialization. 
-Every invocation of `run(SynchroTask)` method first will obtain a new `Connection` from this `DataSource`. 
+Every invocation of `run(SynchroTask)` method first obtains a new `Connection` from this `DataSource`. 
 This connection is then used to create and immediately lock the **control row** with the given **task_id** in 
 the **registry table**. 
 
 If the row already exists and is unlocked, the service will try to reuse it. 
-If the row already exists and is locked by another database session, the given `SynchroTask` will be assumed 
+If the row already exists and is locked by another database session, the given `SynchroTask` is assumed 
 as being currently executed, and the operation outcome will depend on the task [**lock timeout**](#lock-timeout)
 settings.
 
@@ -315,7 +313,7 @@ be returned.
 
 The `Connection` will always be closed before returning from the method.
 
-#### Project dependency
+#### Project dependencies
 ```xml
 <dependency>
     <groupId>org.vg2902</groupId>
@@ -409,7 +407,7 @@ Redis support is implemented by `SynchroTaskRedisService`, which relies on [Redi
     <version>3.19.0</version>
 </dependency>
 ```
-and initialize `RedissonClient` object required by `SynchroTaskRedisService`:
+#### Usage
 
 ```java
 import org.redisson.Redisson;
@@ -467,7 +465,7 @@ in order to clean up the locks which are not released gracefully.
 With SynchroTask Spring extension, you don't need to construct your tasks manually - just tell Spring which methods should be running as 
 <b>SynchroTask</b>s, and the framework will do it for you.
 
-#### Project dependency
+#### Project dependencies
 ```xml
 <dependency>
     <groupId>org.vg2902</groupId>
@@ -478,7 +476,7 @@ With SynchroTask Spring extension, you don't need to construct your tasks manual
 
 #### Usage
 Spring setup requires two steps:
-* enable **SynchroTask** functionality at the application level using `@EnableSynchroTask` annotation
+* enable **SynchroTask** support at the application level using `@EnableSynchroTask` annotation
 * define at least one `SynchroTaskService` bean 
 ```java
 import org.springframework.context.annotation.Bean;
@@ -506,7 +504,7 @@ Then use `@SynchroTask` annotation to indicate a method that you want to run as 
 The framework will wrap the method invocations in individual `SynchroTask` instances 
 and execute them with an eligible `SynchroTaskService` bean.
 
-The method must have a `@TaskId`-annotated method to designate **taskId** of the resulting `SynchroTask` objects.
+The method must have a `@TaskId`-annotated parameter to designate **taskId** of the resulting `SynchroTask` objects.
 
 Note, that the object containing annotated methods has to be a Spring bean.
 
